@@ -1,0 +1,104 @@
+---
+// [category]/[slug].astro — 文章详情页
+import { sanityClient } from "../../lib/sanity";
+import { ARTICLE_BY_SLUG, ALL_ARTICLE_SLUGS } from "../../lib/queries";
+import { generateArticleSchema } from "../../lib/schema-org";
+import ArticleLayout from "../../layouts/ArticleLayout.astro";
+import ArticleHeader from "../../components/article/ArticleHeader.astro";
+import ArticleBody from "../../components/article/ArticleBody.astro";
+import KeyTakeaways from "../../components/article/KeyTakeaways.astro";
+import FAQSection from "../../components/article/FAQSection.astro";
+
+export async function getStaticPaths() {
+  try {
+    const slugs = await sanityClient.fetch<{ slug: string; category: string }[]>(ALL_ARTICLE_SLUGS);
+    return slugs.map(({ slug, category }) => ({
+      params: { category, slug },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+interface Props {
+  category: string;
+  slug: string;
+}
+
+const { category, slug } = Astro.params as Props;
+
+interface ArticleData {
+  title: string;
+  heroImage?: string;
+  heroImageAlt?: string;
+  excerpt?: string;
+  body: any[];
+  keyTakeaways?: string[];
+  faqs?: { question: string; answer: string }[];
+  category: { title: string; slug: string };
+  author: { name: string; slug: string; image?: string };
+  publishedAt: string;
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
+let article: ArticleData | null = null;
+
+try {
+  article = await sanityClient.fetch<ArticleData>(ARTICLE_BY_SLUG, { slug });
+} catch {
+  // Sanity not configured yet
+}
+
+if (!article) {
+  return Astro.redirect("/404");
+}
+
+function estimateReadTime(body: any[]): string {
+  const text = JSON.stringify(body ?? "");
+  const words = text.split(/\s+/).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min read`;
+}
+
+const readTime = estimateReadTime(article.body);
+
+const articleSchema = generateArticleSchema({
+  title: article.title,
+  slug: article.slug ?? slug,
+  excerpt: article.excerpt ?? "",
+  heroImage: article.heroImage ?? "",
+  author: article.author,
+  category: article.category,
+  publishedAt: article.publishedAt,
+  seoTitle: article.seoTitle,
+  seoDescription: article.seoDescription,
+});
+---
+
+<ArticleLayout
+  title={article.title}
+  seoTitle={article.seoTitle}
+  seoDescription={article.seoDescription}
+  heroImage={article.heroImage}
+  category={article.category}
+  articleSlug={slug}
+>
+  <ArticleHeader
+    category={article.category}
+    title={article.title}
+    author={article.author}
+    publishedAt={article.publishedAt}
+    readTime={readTime}
+    heroImage={article.heroImage}
+    heroImageAlt={article.heroImageAlt}
+  />
+
+  <div class="max-w-[1440px] mx-auto px-[var(--content-px)] py-12">
+    <ArticleBody body={article.body} />
+    <KeyTakeaways takeaways={article.keyTakeaways ?? []} />
+    <FAQSection faqs={article.faqs ?? []} />
+  </div>
+
+  <!-- Article JSON-LD -->
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)}></script>
+</ArticleLayout>

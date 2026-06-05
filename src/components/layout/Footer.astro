@@ -1,0 +1,38 @@
+---
+// Footer.astro — 站点页脚
+---
+<footer class="w-full bg-[var(--color-bg-darker)] pt-[60px] pb-12">
+  <div class="max-w-[1280px] mx-auto px-[var(--content-px)]">
+    <!-- Footer Top -->
+    <div class="flex justify-between items-start pb-12 border-b border-[var(--color-border-muted)]">
+      <div class="max-w-[280px]">
+        <p class="font-heading text-lg font-bold text-[var(--color-text-light)] mb-4">
+          The Candid Care
+        </p>
+        <p class="font-body text-[13px] text-[var(--color-text-footer)] leading-relaxed">
+          Honest perspectives on wellness, nutrition, and the daily choices that compound over time.
+        </p>
+      </div>
+
+      <div class="flex gap-20">
+        <div class="flex flex-col gap-3.5">
+          <p class="font-body text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-0.5">Explore</p>
+          <a href="/wellness" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">Wellness</a>
+          <a href="/nutrition" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">Nutrition</a>
+          <a href="/mindset" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">Mindset</a>
+        </div>
+        <div class="flex flex-col gap-3.5">
+          <p class="font-body text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-0.5">Company</p>
+          <a href="/about" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">About</a>
+          <a href="#newsletter" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">Newsletter</a>
+          <a href="/rss.xml" class="font-body text-[13px] text-[var(--color-text-footer)] hover:text-[var(--color-text-light)] transition-colors">RSS</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Bottom -->
+    <p class="font-body text-xs text-[var(--color-text-footer)] mt-8">
+      &copy; {new Date().getFullYear()} The Candid Care. Written by humans, for humans.
+    </p>
+  </div>
+</footer>

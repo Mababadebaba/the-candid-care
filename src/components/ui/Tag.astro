@@ -1,0 +1,19 @@
+---
+// Tag.astro — 文章标签
+interface Props {
+  label: string;
+  href?: string;
+}
+
+const { label, href } = Astro.props;
+const Element = href ? "a" : "span";
+---
+
+<Element
+  {...(href ? { href } : {})}
+  class="inline-block font-body font-semibold text-[10px] tracking-[0.15em] uppercase
+         text-[var(--color-accent)] leading-none
+         {href ? 'hover:opacity-80 transition-opacity' : ''}"
+>
+  {label}
+</Element>

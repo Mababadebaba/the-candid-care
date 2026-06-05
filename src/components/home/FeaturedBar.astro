@@ -1,0 +1,48 @@
+---
+// FeaturedBar.astro — Trending Now 横条
+// 设计稿: 1440×72px, 浅琥珀底色 + 细分隔线 + 三篇热门文章链接
+
+interface TrendingArticle {
+  title: string;
+  href: string;
+}
+
+interface Props {
+  articles?: TrendingArticle[];
+}
+
+const articles = Astro.props.articles ?? [
+  { title: "Why You Wake Up Tired Even After 8 Hours", href: "#" },
+  { title: "The Gut-Brain Axis: What It Actually Means for Your Mood", href: "#" },
+  { title: "Is Magnesium the Most Underrated Supplement?", href: "#" },
+];
+---
+
+<div
+  class="w-full border-y border-[var(--color-accent-border)]"
+  style="background: var(--color-accent-light);"
+>
+  <div class="mx-auto max-w-[1440px] h-[72px] flex items-center gap-12 px-[var(--content-px)]">
+    <!-- TRENDING NOW label -->
+    <span class="font-body font-semibold text-[10px] tracking-widest uppercase text-[var(--color-accent)] leading-none whitespace-nowrap">
+      TRENDING NOW
+    </span>
+
+    <!-- Divider -->
+    <span class="block w-px h-6" style="background: var(--color-border-muted);"></span>
+
+    <!-- Trending links -->
+    {
+      articles.map((article) => (
+        <a
+          href={article.href}
+          class="font-body text-[13px] text-[var(--color-text-body)]
+                 hover:text-[var(--color-accent)] transition-colors
+                 leading-none truncate"
+        >
+          {article.title}
+        </a>
+      ))
+    }
+  </div>
+</div>

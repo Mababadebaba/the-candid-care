@@ -1,0 +1,27 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+---
+
+<BaseLayout
+  title="About — The Candid Care"
+  description="Who we are and why we started The Candid Care."
+>
+  <Header />
+  <main class="w-full max-w-[800px] mx-auto px-[var(--content-px)] py-24">
+    <h1 class="font-heading text-4xl font-bold text-[var(--color-text-primary)] mb-8">About Us</h1>
+    <div class="font-body text-[17px] leading-relaxed text-[var(--color-text-body)] space-y-6">
+      <p>
+        The Candid Care was born from a simple frustration: too much health advice
+        feels like a sales pitch. We believe in honest, evidence-informed perspectives
+        on the everyday choices that shape how we feel.
+      </p>
+      <p>
+        No quick fixes. No empty promises. Just real writing about wellness,
+        nutrition, and mindset — written by humans, for humans.
+      </p>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

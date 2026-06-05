@@ -1,0 +1,90 @@
+---
+// HeroSection.astro — 首屏 Hero 区
+// 深色底 + 左侧文案 + 右侧大图 + 双 CTA 按钮
+// 设计稿: 1440×720px, Hero Text w=640, Image w=800
+
+interface Props {
+  tag?: string;
+  heading?: string;
+  subtext?: string;
+  primaryCta?: string;
+  secondaryCta?: string;
+}
+
+const {
+  tag = "WELLNESS · LIFESTYLE · MINDSET",
+  heading = "Live with Intention,\nNot Instruction",
+  subtext = "Real perspectives on the habits, rituals, and everyday choices that quietly shape how we feel. No quick fixes. No empty promises.",
+  primaryCta = "Start Reading",
+  secondaryCta = "Explore Categories",
+} = Astro.props;
+---
+
+<section
+  class="w-full bg-[var(--color-bg-dark)] flex items-center"
+  style="min-height: 720px;"
+>
+  <div class="mx-auto w-full max-w-[1440px] flex items-center px-[var(--content-px)]">
+    <!-- 左侧文案 -->
+    <div class="flex flex-col gap-8 w-full max-w-[640px]">
+      <!-- Tag -->
+      <p class="font-body font-semibold text-[11px] tracking-widest uppercase text-[var(--color-accent)] leading-none">
+        {tag}
+      </p>
+
+      <!-- H1 -->
+      <h1 class="font-heading font-bold text-[64px] leading-tight text-[var(--color-text-light)] whitespace-pre-line">
+        {heading}
+      </h1>
+
+      <!-- Subtext -->
+      <p class="font-body text-[17px] leading-[1.7] text-[var(--color-text-muted)] max-w-[580px]">
+        {subtext}
+      </p>
+
+      <!-- CTA Row -->
+      <div class="flex items-center gap-4 pt-2">
+        <!-- Primary CTA -->
+        <a
+          href="/articles"
+          class="inline-flex items-center justify-center h-11 px-8 rounded-[2px]
+                 bg-[var(--color-accent)] text-[var(--color-text-light)]
+                 font-body font-semibold text-[14px] leading-none
+                 hover:opacity-90 transition-opacity"
+        >
+          {primaryCta}
+        </a>
+
+        <!-- Secondary CTA (outline) -->
+        <a
+          href="/categories"
+          class="inline-flex items-center justify-center h-11 px-8 rounded-[2px]
+                 border text-[var(--color-text-light)]
+                 font-body text-[14px] font-medium leading-none
+                 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]
+                 transition-colors"
+          style="border-color: rgba(214, 209, 204, 0.4);"
+        >
+          {secondaryCta}
+        </a>
+      </div>
+    </div>
+
+    <!-- 右侧 Hero Image 占位 (背景图 + overlay) -->
+    <div class="ml-auto w-full max-w-[800px] h-[720px] relative overflow-hidden flex-shrink-0">
+      <div class="absolute inset-0 bg-[var(--color-bg-dark)]/30 z-10"></div>
+      <!-- 渐变交叠：左侧渐隐融入深色底 -->
+      <div
+        class="absolute inset-y-0 left-0 w-1/3 z-20"
+        style="background: linear-gradient(to right, var(--color-bg-dark), transparent);"
+      ></div>
+      <img
+        src=""
+        alt="Wellness lifestyle imagery"
+        class="w-full h-full object-cover"
+        loading="eager"
+        style="background: linear-gradient(135deg, #3d352a 0%, #5c4a35 40%, #8b6f47 70%, #a0845c 100%);"
+      />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,68 @@
+---
+// ArticleHeader.astro — 文章页头区：分类标签 + 标题 + 作者 + 日期
+
+interface Props {
+  category: { title: string; slug: string };
+  title: string;
+  author: { name: string; slug: string; image?: string };
+  publishedAt: string;
+  readTime: string;
+  heroImage?: string;
+  heroImageAlt?: string;
+}
+
+const { category, title, author, publishedAt, readTime, heroImage, heroImageAlt } = Astro.props;
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+---
+
+<header class="w-full bg-[var(--color-bg-dark)] pt-32 pb-16">
+  <div class="mx-auto max-w-[1440px] px-[var(--content-px)]">
+    <div class="max-w-[720px]">
+      <!-- Category / Tag -->
+      <a href={`/${category.slug}`}
+         class="inline-block font-body font-semibold text-[11px] tracking-[0.15em] uppercase
+                text-[var(--color-accent)] mb-6 hover:opacity-80 transition-opacity">
+        {category.title}
+      </a>
+
+      <!-- Title -->
+      <h1 class="font-heading font-bold text-[48px] leading-[1.15] text-[var(--color-text-light)] mb-6">
+        {title}
+      </h1>
+
+      <!-- Author + Meta -->
+      <div class="flex items-center gap-4">
+        {author.image && (
+          <img src={author.image}
+               alt={author.name}
+               class="w-10 h-10 rounded-full object-cover"
+               loading="eager" />
+        )}
+        <div class="flex flex-col gap-0.5">
+          <span class="font-body font-medium text-[14px] text-[var(--color-text-light)]">
+            {author.name}
+          </span>
+          <span class="font-body text-[13px] text-[var(--color-text-muted)]">
+            {formatDate(publishedAt)} &middot; {readTime}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Hero Image (below header, edge-to-edge with max-width) -->
+{heroImage && (
+  <div class="mx-auto max-w-[1440px] px-[var(--content-px)] -mt-8 mb-0">
+    <img src={heroImage} alt={heroImageAlt ?? title}
+         class="w-full aspect-[1280/480] object-cover rounded-[4px]"
+         loading="eager" />
+  </div>
+)}

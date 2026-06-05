@@ -1,0 +1,137 @@
+---
+// [category]/index.astro — 分类页
+import { sanityClient } from "../../lib/sanity";
+import { CATEGORY_ARTICLES, CATEGORY_META, ALL_CATEGORY_SLUGS } from "../../lib/queries";
+import { generateCollectionPageSchema } from "../../lib/schema-org";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Header from "../../components/layout/Header.astro";
+import Footer from "../../components/layout/Footer.astro";
+
+export async function getStaticPaths() {
+  try {
+    const categories = await sanityClient.fetch<{ slug: string }[]>(ALL_CATEGORY_SLUGS);
+    return categories.map(({ slug }) => ({ params: { category: slug } }));
+  } catch {
+    return [];
+  }
+}
+
+interface Props {
+  category: string;
+}
+
+const { category } = Astro.params as Props;
+
+interface Article {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  heroImage?: string;
+  heroImageAlt?: string;
+  category?: { title: string; slug: string };
+  author?: { name: string; slug: string; image?: string };
+  publishedAt: string;
+  tags?: string[];
+}
+
+let articles: Article[] = [];
+let meta: { title?: string; description?: string } = {};
+
+try {
+  [articles, meta] = await Promise.all([
+    sanityClient.fetch<Article[]>(CATEGORY_ARTICLES, { category }),
+    sanityClient.fetch<{ title?: string; description?: string }>(CATEGORY_META, { category }),
+  ]);
+} catch {
+  // Sanity not configured yet
+}
+
+const pageTitle = meta.title || category;
+const pageDescription = meta.description || `Articles about ${category}`;
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <Header />
+  <main class="w-full">
+    <!-- Header -->
+    <section class="w-full bg-[var(--color-bg-dark)] pt-28 pb-16">
+      <div class="mx-auto max-w-[1440px] px-[var(--content-px)]">
+        <h1 class="font-heading font-bold text-[48px] text-[var(--color-text-light)] leading-none mb-4">
+          {pageTitle}
+        </h1>
+        {meta.description && (
+          <p class="font-body text-[17px] text-[var(--color-text-muted)] max-w-[560px]">
+            {meta.description}
+          </p>
+        )}
+      </div>
+    </section>
+
+    <!-- Article Grid -->
+    <section class="w-full bg-[var(--color-bg-page)] py-20">
+      <div class="mx-auto max-w-[1440px] px-[var(--content-px)]">
+        {articles.length === 0 ? (
+          <p class="font-body text-[var(--color-text-muted)] text-center py-16">
+            No articles in this category yet.
+          </p>
+        ) : (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {articles.map((article) => (
+              <a href={`/${article.category?.slug ?? category}/${article.slug}`}
+                 class="group block bg-white rounded-[4px] overflow-hidden
+                        shadow-[var(--shadow-card)]
+                        hover:shadow-[0_8px_30px_rgba(28,26,23,0.10)]
+                        transition-shadow">
+                <div class="w-full aspect-[405/220] overflow-hidden">
+                  {article.heroImage ? (
+                    <img src={article.heroImage} alt={article.heroImageAlt ?? article.title}
+                         class="w-full h-full object-cover rounded-t-[4px]"
+                         loading="lazy" />
+                  ) : (
+                    <div class="w-full h-full rounded-t-[4px]"
+                         style="background: linear-gradient(135deg, #8b7355, #a0845c, #c9a87c);">
+                    </div>
+                  )}
+                </div>
+                <div class="flex flex-col gap-2.5 p-6">
+                  <span class="font-body font-semibold text-[10px] tracking-widest uppercase text-[var(--color-accent)] leading-none">
+                    {article.category?.title ?? category}
+                  </span>
+                  <h3 class="font-heading font-semibold text-[18px] leading-[1.38] text-[var(--color-text-primary)]
+                             group-hover:text-[var(--color-accent)] transition-colors">
+                    {article.title}
+                  </h3>
+                  <p class="font-body text-[12px] text-[var(--color-text-muted)] mt-1.5">
+                    {formatDate(article.publishedAt)}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  </main>
+  <Footer />
+
+  <!-- CollectionPage JSON-LD -->
+  {
+    articles.length > 0 && (
+      <script type="application/ld+json" set:html={JSON.stringify(
+        generateCollectionPageSchema(
+          { title: pageTitle, slug: category },
+          articles.map(a => `https://thecandidcare.com/${a.category?.slug ?? category}/${a.slug}`)
+        )
+      )}></script>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,30 @@
+---
+// Header.astro — 极简顶部导航，深色背景
+---
+<header class="w-full h-20 bg-[var(--color-bg-dark)] flex items-center justify-between px-[var(--content-px)]">
+  <a href="/" class="font-heading text-xl font-semibold text-[var(--color-text-light)] tracking-tight">
+    The Candid Care
+  </a>
+
+  <nav class="flex items-center gap-10">
+    <a href="/wellness" class="font-body text-sm text-[#D6D3D1] hover:text-[var(--color-text-light)] transition-colors">
+      Wellness
+    </a>
+    <a href="/nutrition" class="font-body text-sm text-[#D6D3D1] hover:text-[var(--color-text-light)] transition-colors">
+      Nutrition
+    </a>
+    <a href="/mindset" class="font-body text-sm text-[#D6D3D1] hover:text-[var(--color-text-light)] transition-colors">
+      Mindset
+    </a>
+    <a href="/about" class="font-body text-sm text-[#D6D3D1] hover:text-[var(--color-text-light)] transition-colors">
+      About
+    </a>
+  </nav>
+
+  <a
+    href="#newsletter"
+    class="bg-[var(--color-accent)] text-[var(--color-text-light)] text-[13px] font-medium font-body rounded-[2px] px-6 py-2.5 hover:opacity-90 transition-opacity"
+  >
+    Subscribe
+  </a>
+</header>

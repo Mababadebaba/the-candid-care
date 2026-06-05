@@ -1,0 +1,45 @@
+---
+// ArticleBody.astro — 文章正文（Portable Text → Astro 原生渲染）
+interface Props {
+  body: any[];
+}
+
+const { body } = Astro.props;
+
+function renderSpan(child: any): string {
+  let text = child.text || "";
+  if (!child.marks || child.marks.length === 0) return text;
+  for (const mark of child.marks) {
+    switch (mark) {
+      case "strong": text = `<strong class="font-semibold">${text}</strong>`; break;
+      case "em": text = `<em>${text}</em>`; break;
+      case "underline": text = `<u>${text}</u>`; break;
+      default: break;
+    }
+  }
+  return text;
+}
+
+function renderChildren(children: any[]): string {
+  return children?.map(renderSpan).join("") ?? "";
+}
+
+const blocks = body ?? [];
+---
+
+<article class="font-body text-[17px] text-[var(--color-text-body)] leading-[1.82] max-w-[720px] mx-auto">
+  {blocks.map((block: any) => {
+    if (block._type !== "block" || !block.children) return null;
+    const html = renderChildren(block.children);
+    if (!html.trim()) return null;
+
+    switch (block.style) {
+      case "h2":
+        return <h2 class="font-heading font-bold text-[28px] text-[var(--color-text-primary)] mt-12 mb-4 leading-[1.3]" set:html={html} />;
+      case "h3":
+        return <h3 class="font-heading font-semibold text-[22px] text-[var(--color-text-primary)] mt-8 mb-3 leading-[1.35]" set:html={html} />;
+      default:
+        return <p class="font-body text-[17px] text-[var(--color-text-body)] leading-[1.82] mb-5" set:html={html} />;
+    }
+  })}
+</article>

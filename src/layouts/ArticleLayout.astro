@@ -1,0 +1,58 @@
+---
+// ArticleLayout.astro — 文章页专用布局（含 Breadcrumb Schema）
+
+import { generateBreadcrumbSchema } from "../lib/schema-org";
+import BaseLayout from "./BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+
+interface Props {
+  title: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  heroImage?: string;
+  category: { title: string; slug: string };
+  articleSlug: string;
+}
+
+const { title, seoTitle, seoDescription, heroImage, category, articleSlug } = Astro.props;
+
+const breadcrumb = generateBreadcrumbSchema([
+  { name: "Home", url: "/" },
+  { name: category.title, url: `/${category.slug}` },
+  { name: title, url: `/${category.slug}/${articleSlug}` },
+]);
+---
+
+<BaseLayout
+  title={seoTitle || title}
+  description={seoDescription}
+  image={heroImage}
+>
+  <Header />
+  <main class="w-full">
+    <!-- Breadcrumb -->
+    <nav class="max-w-[1440px] mx-auto px-[var(--content-px)] pt-6" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-2 font-body text-[13px] text-[var(--color-text-muted)]">
+        <li><a href="/" class="hover:text-[var(--color-accent)] transition-colors">Home</a></li>
+        <li aria-hidden="true">/</li>
+        <li><a href={`/${category.slug}`} class="hover:text-[var(--color-accent)] transition-colors">{category.title}</a></li>
+        <li aria-hidden="true">/</li>
+        <li class="text-[var(--color-text-primary)] line-clamp-1">{title}</li>
+      </ol>
+    </nav>
+
+    <slot />
+
+    <!-- Author bio / CTA divider -->
+    <div class="max-w-[720px] mx-auto mt-16 mb-20 border-t border-[var(--color-border)]/20 pt-10">
+      <p class="font-body text-[14px] text-[var(--color-text-muted)] text-center">
+        Enjoyed this article? <a href="/newsletter" class="text-[var(--color-accent)] hover:opacity-80 transition-opacity">Subscribe to our newsletter</a> for more honest conversations about wellness.
+      </p>
+    </div>
+  </main>
+  <Footer />
+
+  <!-- Breadcrumb JSON-LD -->
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumb)}></script>
+</BaseLayout>

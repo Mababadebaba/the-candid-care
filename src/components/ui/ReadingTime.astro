@@ -1,0 +1,14 @@
+---
+// ReadingTime.astro — 阅读时长估算
+interface Props {
+  text?: string;
+  body?: any[];
+}
+
+const { text, body } = Astro.props;
+const raw = text ?? JSON.stringify(body ?? "");
+const words = raw.split(/\s+/).length;
+const mins = Math.max(1, Math.ceil(words / 200));
+---
+
+<span class="font-body text-[13px] text-[var(--color-text-muted)]">{mins} min read</span>

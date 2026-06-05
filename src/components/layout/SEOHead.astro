@@ -1,0 +1,41 @@
+---
+// SEOHead.astro — Open Graph / Twitter Card / JSON-LD 注入
+
+export interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  ogType?: string;
+  twitterCard?: string;
+}
+
+const {
+  title,
+  description,
+  ogImage = "/og-default.png",
+  ogType = "website",
+  twitterCard = "summary_large_image",
+} = Astro.props;
+
+const siteUrl = Astro.site ?? "https://thecandidcare.com";
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+---
+
+<!-- Primary Meta -->
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalUrl} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={new URL(ogImage, siteUrl).href} />
+<meta property="og:site_name" content="The Candid Care" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content={twitterCard} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={new URL(ogImage, siteUrl).href} />

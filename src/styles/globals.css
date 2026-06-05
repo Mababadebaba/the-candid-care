@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens: 第一版设计风格 · The Candid Care ─── */
+
+:root {
+  /* Background */
+  --color-bg-page:       #FAFAF8;
+  --color-bg-dark:       #1C1A17;
+  --color-bg-darker:     #171510;
+  --color-bg-card:       #FFFFFF;
+  --color-bg-input:      #292422;
+
+  /* Accent — 焦橙色 */
+  --color-accent:        #A16207;
+  --color-accent-light:  rgba(161, 98, 7, 0.08);
+  --color-accent-border: rgba(161, 98, 7, 0.20);
+
+  /* Text — Light BG */
+  --color-text-primary:  #1C1A17;
+  --color-text-body:     #44403C;
+  --color-text-excerpt:  #78716C;
+
+  /* Text — Dark BG */
+  --color-text-light:    #FAFAF9;
+  --color-text-muted:    #A8A29E;
+  --color-text-footer:   #57534E;
+
+  /* Border / Divider */
+  --color-border:        #D6D1CC;
+  --color-border-muted:  rgba(214, 209, 204, 0.30);
+
+  /* Shadow */
+  --shadow-card: 0 4px 20px rgba(28, 26, 23, 0.06);
+
+  /* Spacing */
+  --section-gap: 80px;
+  --content-px:  80px;
+  --card-gap:    32px;
+}
+
+/* ─── Font Families ─── */
+
+@layer base {
+  html, body {
+    height: 100%;
+  }
+
+  .font-heading {
+    font-family: "Lora", Georgia, serif;
+  }
+
+  .font-body {
+    font-family: "Raleway", "Helvetica Neue", Arial, sans-serif;
+  }
+}

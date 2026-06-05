@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Allow LLM crawlers for GEO visibility
+User-agent: GPTBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://thecandidcare.com/sitemap-index.xml

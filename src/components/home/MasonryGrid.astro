@@ -1,0 +1,177 @@
+---
+// MasonryGrid.astro — 文章卡片网格（接受 Sanity 数据）
+// 设计稿: Row 1 (Featured + Side) + Row 2 (3 equal cols)
+
+interface SanityArticle {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  heroImage?: string;
+  heroImageAlt?: string;
+  category?: { title: string; slug: string };
+  author?: { name: string; slug: string; image?: string };
+  publishedAt: string;
+  tags?: string[];
+}
+
+interface Props {
+  articles: SanityArticle[];
+}
+
+const { articles } = Astro.props as Props;
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function estimateReadTime(text?: string): string {
+  const words = text?.split(/\s+/).length ?? 0;
+  const mins = Math.max(1, Math.ceil(words / 200));
+  return `${mins} min read`;
+}
+
+const featured = articles[0] ?? null;
+const side = articles[1] ?? null;
+const compact = articles.slice(2, 5);
+---
+
+<section class="w-full bg-[var(--color-bg-page)] py-20">
+  <div class="mx-auto max-w-[1440px] px-[var(--content-px)]">
+
+    <!-- Grid Header -->
+    <div class="flex items-baseline justify-between mb-10">
+      <h2 class="font-heading font-bold text-[36px] text-[var(--color-text-primary)] leading-none">
+        Latest Stories
+      </h2>
+      <a href="/articles"
+         class="font-body text-[14px] text-[var(--color-accent)] hover:opacity-80 transition-opacity leading-none">
+        View all &rarr;
+      </a>
+    </div>
+
+    {articles.length === 0 ? (
+      <p class="font-body text-[var(--color-text-muted)] text-center py-16">
+        No articles yet. Check back soon.
+      </p>
+    ) : (
+      <>
+        <!-- Row 1: Featured + Side -->
+        <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 mb-8">
+          {featured && (
+            <a href={`/${featured.category?.slug ?? "articles"}/${featured.slug}`}
+               class="group block bg-white rounded-[4px] overflow-hidden
+                      shadow-[var(--shadow-card)]
+                      hover:shadow-[0_8px_30px_rgba(28,26,23,0.10)]
+                      transition-shadow">
+              <div class="w-full aspect-[832/460] overflow-hidden">
+                {featured.heroImage ? (
+                  <img src={featured.heroImage} alt={featured.heroImageAlt ?? featured.title}
+                       class="w-full h-full object-cover rounded-t-[4px]"
+                       loading="eager" />
+                ) : (
+                  <div class="w-full h-full rounded-t-[4px]"
+                       style="background: linear-gradient(135deg, #8b7355 0%, #a0845c 40%, #b8956e 70%, #c9a87c 100%);">
+                  </div>
+                )}
+              </div>
+              <div class="flex flex-col gap-3.5 p-8">
+                <span class="font-body font-semibold text-[10px] tracking-widest uppercase text-[var(--color-accent)] leading-none">
+                  {featured.category?.title ?? "Article"}
+                </span>
+                <h3 class="font-heading font-semibold text-[26px] leading-[1.38] text-[var(--color-text-primary)]
+                           group-hover:text-[var(--color-accent)] transition-colors">
+                  {featured.title}
+                </h3>
+                {featured.excerpt && (
+                  <p class="font-body text-[15px] leading-[1.68] text-[var(--color-text-excerpt)] line-clamp-2">
+                    {featured.excerpt}
+                  </p>
+                )}
+                <p class="font-body text-[12px] text-[var(--color-text-muted)] mt-1">
+                  {formatDate(featured.publishedAt)} &middot; {estimateReadTime(featured.excerpt)}
+                </p>
+              </div>
+            </a>
+          )}
+
+          {side && (
+            <a href={`/${side.category?.slug ?? "articles"}/${side.slug}`}
+               class="group block bg-white rounded-[4px] overflow-hidden
+                      shadow-[var(--shadow-card)]
+                      hover:shadow-[0_8px_30px_rgba(28,26,23,0.10)]
+                      transition-shadow">
+              <div class="w-full aspect-[416/260] overflow-hidden">
+                {side.heroImage ? (
+                  <img src={side.heroImage} alt={side.heroImageAlt ?? side.title}
+                       class="w-full h-full object-cover rounded-t-[4px]"
+                       loading="lazy" />
+                ) : (
+                  <div class="w-full h-full rounded-t-[4px]"
+                       style="background: linear-gradient(135deg, #5c6b4a 0%, #6d7d58 40%, #7d8e67 70%, #8e9f78 100%);">
+                  </div>
+                )}
+              </div>
+              <div class="flex flex-col gap-3 p-7">
+                <span class="font-body font-semibold text-[10px] tracking-widest uppercase text-[var(--color-accent)] leading-none">
+                  {side.category?.title ?? "Article"}
+                </span>
+                <h3 class="font-heading font-semibold text-[20px] leading-[1.38] text-[var(--color-text-primary)]
+                           group-hover:text-[var(--color-accent)] transition-colors">
+                  {side.title}
+                </h3>
+                {side.excerpt && (
+                  <p class="font-body text-[14px] leading-[1.65] text-[var(--color-text-excerpt)] line-clamp-2">
+                    {side.excerpt}
+                  </p>
+                )}
+                <p class="font-body text-[12px] text-[var(--color-text-muted)] mt-1">
+                  {formatDate(side.publishedAt)} &middot; {estimateReadTime(side.excerpt)}
+                </p>
+              </div>
+            </a>
+          )}
+        </div>
+
+        <!-- Row 2: Three compact cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {compact.map((article) => (
+            <a href={`/${article.category?.slug ?? "articles"}/${article.slug}`}
+               class="group block bg-white rounded-[4px] overflow-hidden
+                      shadow-[var(--shadow-card)]
+                      hover:shadow-[0_8px_30px_rgba(28,26,23,0.10)]
+                      transition-shadow">
+              <div class="w-full aspect-[405/220] overflow-hidden">
+                {article.heroImage ? (
+                  <img src={article.heroImage} alt={article.heroImageAlt ?? article.title}
+                       class="w-full h-full object-cover rounded-t-[4px]"
+                       loading="lazy" />
+                ) : (
+                  <div class="w-full h-full rounded-t-[4px]"
+                       style="background: linear-gradient(135deg, #4a5568 0%, #5a6a7e 40%, #6b7d93 70%, #7c90a8 100%);">
+                  </div>
+                )}
+              </div>
+              <div class="flex flex-col gap-2.5 p-6">
+                <span class="font-body font-semibold text-[10px] tracking-widest uppercase text-[var(--color-accent)] leading-none">
+                  {article.category?.title ?? "Article"}
+                </span>
+                <h3 class="font-heading font-semibold text-[18px] leading-[1.38] text-[var(--color-text-primary)]
+                           group-hover:text-[var(--color-accent)] transition-colors">
+                  {article.title}
+                </h3>
+                <p class="font-body text-[12px] text-[var(--color-text-muted)] mt-1.5">
+                  {formatDate(article.publishedAt)} &middot; {estimateReadTime(article.excerpt)}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
+</section>

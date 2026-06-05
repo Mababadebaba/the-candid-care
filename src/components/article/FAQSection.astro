@@ -1,0 +1,45 @@
+---
+// FAQSection.astro — 文末 FAQ 模块（含 FAQPage Schema for GEO）
+
+import { generateFAQSchema } from "../../lib/schema-org";
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface Props {
+  faqs: FAQ[];
+}
+
+const { faqs } = Astro.props;
+---
+
+{faqs && faqs.length > 0 && (
+  <section class="max-w-[720px] mx-auto mt-12 mb-16" aria-label="Frequently asked questions">
+    <h2 class="font-heading font-bold text-[24px] text-[var(--color-text-primary)] mb-8">
+      Frequently Asked Questions
+    </h2>
+    <div class="flex flex-col gap-6">
+      {faqs.map((faq) => (
+        <details class="group border-b border-[var(--color-border)]/30 pb-6">
+          <summary class="font-body font-medium text-[16px] text-[var(--color-text-primary)]
+                          cursor-pointer list-none flex items-start justify-between gap-4
+                          marker:content-none">
+            <span>{faq.question}</span>
+            <span class="text-[var(--color-accent)] text-lg leading-none mt-0.5 flex-shrink-0
+                         group-open:rotate-45 transition-transform duration-200">
+              &#43;
+            </span>
+          </summary>
+          <p class="font-body text-[15px] text-[var(--color-text-body)] leading-[1.7] mt-3 pl-0">
+            {faq.answer}
+          </p>
+        </details>
+      ))}
+    </div>
+
+    <!-- FAQPage JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(generateFAQSchema(faqs))}></script>
+  </section>
+)}

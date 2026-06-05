@@ -1,0 +1,51 @@
+---
+// BaseLayout.astro — 全局 HTML 骨架
+// 注入字体、全局样式、SEO Head、结构化数据
+
+import "../styles/globals.css";
+import SEOHead from "../components/layout/SEOHead.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  schema?: object;
+}
+
+const {
+  title = "The Candid Care",
+  description = "Real perspectives on the habits, rituals, and everyday choices that quietly shape how we feel. No quick fixes. No empty promises.",
+  ogImage = "/og-default.png",
+  schema,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Fonts: Lora (headings) + Raleway (body) — self-host via Google Fonts CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Raleway:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <SEOHead
+      title={title}
+      description={description}
+      ogImage={ogImage}
+    />
+
+    {schema && (
+      <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    )}
+  </head>
+  <body class="h-full font-body text-[var(--color-text-body)] bg-[var(--color-bg-page)] antialiased">
+    <slot />
+  </body>
+</html>
