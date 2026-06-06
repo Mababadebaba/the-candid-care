@@ -1,16 +1,12 @@
-# The Candid Care — Dify Workflow DSL
+# The Candid Care — Dify Workflow DSL (DeepSeek 版)
 #
 # 导入方式: Dify Studio → 创建应用 → 导入 DSL
-# 版本要求: Dify >= 0.8.0 (Workflow 模式)
+# 模型: DeepSeek (deepseek-chat)
+# 图片: 内置占位图生成 (无需外部图片 API)
 #
 # 管道流程:
 #   [定时触发] → [RSS 采集] → [内容审核] → [AI 改写]
-#   → [SEO/GEO 元数据] → [图片生成] → [Sanity 发布]
-#
-# 前置条件:
-#   1. Dify 中配置环境变量 (见 README.md)
-#   2. Sanity 中已有 author 和 category 文档
-#   3. 图片生成 API Key 已配置
+#   → [SEO/GEO 元数据] → [Sanity 发布]
 
 version: 0.1.2
 kind: app
@@ -20,8 +16,8 @@ app:
   mode: workflow
   description: >
     自动化内容管道：定时从 RSS 源采集健康与生活方式文章，
-    AI 审核并改写为 The Candid Care 品牌风格，
-    生成配图后自动发布到 Sanity CMS 并触发站点重建。
+    AI 审核并改写为 The Candid Care 品牌风格 (DeepSeek)，
+    自动发布到 Sanity CMS 并触发站点重建。
   icon: "🤖"
   icon_background: "#1C1A17"
 
@@ -32,7 +28,7 @@ workflow:
     - key: RSS_FEED_URLS
       name: RSS源地址列表
       type: string
-      description: 换行分隔的 RSS 源 URL，每行一个
+      description: 换行分隔的 RSS 源 URL
       value: |
         https://www.health.harvard.edu/blog/feed
         https://www.sleepfoundation.org/feed
@@ -42,8 +38,8 @@ workflow:
     - key: SANITY_PROJECT_ID
       name: Sanity 项目 ID
       type: string
-      description: 从 sanity.config.ts 或 Sanity Dashboard 获取
-      value: ""
+      description: 从 Sanity Dashboard 获取
+      value: "o06jwzs8"
 
     - key: SANITY_DATASET
       name: Sanity 数据集
@@ -54,32 +50,20 @@ workflow:
     - key: SANITY_API_TOKEN
       name: Sanity API Token
       type: secret
-      description: Sanity Dashboard → API → Tokens → 创建 Editor 权限 Token
+      description: Sanity Dashboard → API → Tokens → Editor 权限
       value: ""
 
     - key: AUTHOR_REF_ID
       name: 默认作者 Sanity _id
       type: string
-      description: 在 Sanity Studio 中创建作者后复制其 _id
-      value: ""
-
-    - key: IMAGE_GEN_API_URL
-      name: 图片生成 API 地址
-      type: string
-      description: AI 图片生成服务端点 (如 DALL-E、Stable Diffusion)
-      value: ""
-
-    - key: IMAGE_GEN_API_KEY
-      name: 图片生成 API Key
-      type: secret
-      description: 图片生成服务的 API 密钥
-      value: ""
+      description: 自动创建的默认作者引用
+      value: "author-default"
 
     - key: SITE_PUBLIC_URL
       name: 站点公开地址
       type: string
-      description: 用于 RSS 改写时引用原文链接
-      value: "https://thecandidcare.com"
+      description: 用于引用原文链接
+      value: "https://the-candid-care.vercel.app"
 
   features:
     opening_statement: ""
@@ -130,7 +114,6 @@ workflow:
             from urllib.error import URLError
             import re
 
-            # 获取 RSS 源列表 (Dify 环境变量)
             feed_urls_str = """{{env.RSS_FEED_URLS}}"""
             feed_urls = [u.strip() for u in feed_urls_str.split("\n") if u.strip() and u.strip().startswith("http")]
 
@@ -142,29 +125,20 @@ workflow:
                     req = Request(feed_url, headers={"User-Agent": "TheCandidCare/1.0"})
                     with urlopen(req, timeout=15) as resp:
                         xml_data = resp.read().decode("utf-8")
-
                     root = ET.fromstring(xml_data)
-
-                    # RSS 2.0
                     for item in root.iter("item"):
                         title = item.findtext("title", "").strip()
                         link = item.findtext("link", "").strip()
                         description = item.findtext("description", "").strip()
                         pub_date_str = item.findtext("pubDate", "").strip()
-
                         if not title or not link:
                             continue
-
-                        # 清理 HTML from description
                         description = re.sub(r"<[^>]+>", "", description)[:500]
-
-                        # 解析日期
                         try:
                             from email.utils import parsedate_to_datetime
                             pub_date = parsedate_to_datetime(pub_date_str)
                         except:
                             pub_date = datetime.now(timezone.utc)
-
                         if pub_date >= cutoff:
                             all_articles.append({
                                 "title": title,
@@ -173,12 +147,11 @@ workflow:
                                 "published_at": pub_date.isoformat(),
                                 "feed_source": feed_url,
                             })
-
                 except Exception as e:
                     print(f"Error fetching {feed_url}: {e}")
                     continue
 
-            # 去重 (按 source_url)
+            # 去重
             seen = set()
             unique_articles = []
             for a in all_articles:
@@ -188,7 +161,7 @@ workflow:
 
             print(json.dumps({
                 "total_found": len(unique_articles),
-                "articles": unique_articles[:10],  # 最多处理 10 篇
+                "articles": unique_articles[:5],
             }, ensure_ascii=False))
           variables:
             - variable: "articles_json"
@@ -205,11 +178,11 @@ workflow:
           y: 300
         data:
           title: "内容审核"
-          desc: "LLM 评估文章质量与匹配度"
+          desc: "DeepSeek 评估文章质量与匹配度"
           model:
             mode: "chat"
-            name: "gpt-4o"
-            provider: "openai"
+            name: "deepseek-chat"
+            provider: "deepseek"
             completion_params:
               temperature: 0.3
               max_tokens: 500
@@ -224,12 +197,12 @@ workflow:
                 {
                   "approved": true/false,
                   "quality_score": 1-5,
-                  "category": "nutrition|fitness|mental-health|sleep|longevity|lifestyle|nutrition-facts",
+                  "category": "mindfulness|nutrition|movement|sleep|mental-health|relationships|self-care",
                   "reasoning": "brief explanation"
                 }
                 ```
 
-                APPROVE: Evidence-based health, nutrition, fitness, sleep, mental health, longevity, or lifestyle science.
+                APPROVE: Evidence-based health, nutrition, fitness, sleep, mental health, mindfulness, self-care.
                 REJECT: Celebrity gossip, politics, unsupported alternative medicine, product reviews without science, pure PR.
 
             - role: "user"
@@ -253,7 +226,7 @@ workflow:
           y: 300
         data:
           title: "是否通过审核?"
-          desc: "仅 quality ≥ 3 继续处理"
+          desc: "quality ≥ 3 继续处理"
           conditions:
             - comparison_operator: "contains"
               variable_selector:
@@ -282,11 +255,11 @@ workflow:
           y: 300
         data:
           title: "AI 改写"
-          desc: "重写为 The Candid Care 风格"
+          desc: "DeepSeek 重写为品牌风格"
           model:
             mode: "chat"
-            name: "gpt-4o"
-            provider: "openai"
+            name: "deepseek-chat"
+            provider: "deepseek"
             completion_params:
               temperature: 0.7
               max_tokens: 3000
@@ -301,11 +274,11 @@ workflow:
                 - Conversational yet precise: plain language, accurate science
 
                 STRUCTURE:
-                1. Hook (1-2¶): Relatable scenario or surprising stat
-                2. Why it matters (1-2¶): Context and urgency
-                3. Core info (3-5¶): What the reader needs to know
-                4. Actionable tips (2-3¶): What the reader can do today
-                5. Bottom line (1¶): Forward-looking summary
+                1. Hook (1-2 paragraphs): Relatable scenario or surprising stat
+                2. Why it matters (1-2 paragraphs): Context and urgency
+                3. Core info (3-5 paragraphs): What the reader needs to know
+                4. Actionable tips (2-3 paragraphs): What the reader can do today
+                5. Bottom line (1 paragraph): Forward-looking summary
 
                 FORMAT:
                 - Use <h2> for main sections, <h3> for sub-sections
@@ -319,10 +292,9 @@ workflow:
                 Return ONLY the HTML body (no title, no <html> wrapper):
             - role: "user"
               text: |
-                Category: {{article-review.output.review_result's category}}
+                Category: {{article-review.output.review_result}}
                 Original: {{rss-fetch.output.title}}
                 Source: {{rss-fetch.output.source_url}}
-
                 Content: {{rss-fetch.output.content_preview}}
 
                 Please rewrite for The Candid Care.
@@ -333,7 +305,7 @@ workflow:
                 - "text"
               variable_type: "string"
 
-      # ── Node 6: SEO/GEO 元数据生成 ──
+      # ── Node 6: SEO/GEO 元数据 ──
       - id: "generate-metadata"
         type: "llm"
         position:
@@ -344,8 +316,8 @@ workflow:
           desc: "生成标题/描述/FAQ/标签"
           model:
             mode: "chat"
-            name: "gpt-4o"
-            provider: "openai"
+            name: "deepseek-chat"
+            provider: "deepseek"
             completion_params:
               temperature: 0.4
               max_tokens: 1500
@@ -367,8 +339,7 @@ workflow:
                     {"question": "Q2?", "answer": "A2."},
                     {"question": "Q3?", "answer": "A3."}
                   ],
-                  "slug": "url-friendly-slug",
-                  "image_prompt": "Descriptive prompt for AI image generation (50-100 words, photorealistic, warm tones)"
+                  "slug": "url-friendly-slug"
                 }
                 ```
 
@@ -376,10 +347,10 @@ workflow:
                 - Title: Include primary keyword, under 65 chars
                 - Description: Action verb + value prop, under 155 chars
                 - FAQs: Reflect "People Also Ask" patterns
-                - Image prompt: Photorealistic, warm earth tones, suitable for wellness blog
+                - Tags: lowercase, hyphenated
             - role: "user"
               text: |
-                Category: {{article-review.output.review_result's category}}
+                Category: {{article-review.output.review_result}}
                 Rewritten Body (first 500 chars): {{article-rewrite.output.rewritten_body[:500]}}
           variables:
             - variable: "metadata_json"
@@ -388,64 +359,25 @@ workflow:
                 - "text"
               variable_type: "string"
 
-      # ── Node 7: 图片生成 ──
-      - id: "generate-image"
-        type: "http-request"
+      # ── Node 7: Sanity 发布 (含占位图) ──
+      - id: "sanity-publish"
+        type: "code"
         position:
           x: 1380
           y: 300
         data:
-          title: "AI 配图"
-          desc: "调用图片生成 API"
-          authorization:
-            type: "bearer"
-            config:
-              api_key: "{{env.IMAGE_GEN_API_KEY}}"
-          method: "post"
-          url: "{{env.IMAGE_GEN_API_URL}}"
-          headers: "Content-Type: application/json"
-          body:
-            type: "json"
-            data: |
-              {
-                "prompt": {{generate-metadata.output.metadata_json's image_prompt}},
-                "size": "1200x630",
-                "style": "photorealistic"
-              }
-          variables:
-            - variable: "image_url"
-              value_selector:
-                - "generate-image"
-                - "body"
-                - "image_url"
-              variable_type: "string"
-
-      # ── Node 8: Sanity 发布 ──
-      - id: "sanity-publish"
-        type: "code"
-        position:
-          x: 1600
-          y: 300
-        data:
           title: "Sanity 发布"
-          desc: "上传图片并创建文章文档"
+          desc: "生成占位图并创建文章"
           code_language: "python3"
           code: |
             """
-            Sanity API — 上传图片并创建文章文档
-            环境变量: SANITY_PROJECT_ID, SANITY_DATASET, SANITY_API_TOKEN
-            变量:
-              - article_title: LLM 产出的标题
-              - article_body: AI 改写的 HTML body
-              - metadata: SEO/GEO 元数据 JSON
-              - image_url: AI 生成的图片 URL
-              - author_ref: 默认作者 Sanity _id
+            Sanity API — 生成占位图并创建文章文档
             """
             import json
             from datetime import datetime, timezone
             from urllib.request import Request, urlopen
-            from urllib.error import HTTPError
             import re
+            import base64
 
             PROJECT_ID = "{{env.SANITY_PROJECT_ID}}"
             DATASET = "{{env.SANITY_DATASET}}" or "production"
@@ -464,25 +396,39 @@ workflow:
                 with urlopen(req) as resp:
                     return json.loads(resp.read().decode("utf-8"))
 
-            # ── Step 1: 解析元数据 ──
+            # 解析元数据
             metadata_str = """{{generate-metadata.output.metadata_json}}"""
-            # 提取 JSON
             match = re.search(r'\{.*\}', metadata_str, re.DOTALL)
             metadata = json.loads(match.group()) if match else {}
 
-            # ── Step 2: 下载并上传图片 ──
-            image_url = "{{generate-image.output.image_url}}"
-            with urlopen(Request(image_url)) as resp:
-                img_data = resp.read()
+            # 生成占位图 SVG (暖色调渐变, 1200x630)
+            svg = '''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+              <defs>
+                <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#1C1A17"/>
+                  <stop offset="50%" style="stop-color:#A16207"/>
+                  <stop offset="100%" style="stop-color:#FAFAF8"/>
+                </linearGradient>
+              </defs>
+              <rect width="1200" height="630" fill="url(#bg)"/>
+              <text x="600" y="315" text-anchor="middle" fill="white"
+                    font-family="Georgia,serif" font-size="42" font-weight="bold"
+                    opacity="0.9">{title}</text>
+            </svg>'''.replace("{title}", metadata.get("title", "The Candid Care"))
 
-            # 获取 Sanity upload URL
+            # 上传 SVG 为图片资源
+            upload_body = {
+                "fileName": "hero-image.svg",
+                "contentType": "image/svg+xml",
+                "content": base64.b64encode(svg.encode("utf-8")).decode("utf-8"),
+            }
             upload_result = api_post(
                 f"{API_BASE}/assets/images/{DATASET}",
-                {"label": metadata.get("title", "Article Hero")},
+                upload_body,
             )
             image_asset_id = upload_result.get("document", {}).get("_id", "")
 
-            # ── Step 3: HTML → Portable Text ──
+            # HTML → Portable Text
             body_html = """{{article-rewrite.output.rewritten_body}}"""
             blocks = []
             chunks = re.findall(
@@ -495,7 +441,6 @@ workflow:
                 if not clean:
                     continue
                 tag = tag.lower()
-
                 if tag in ('h2', 'h3'):
                     blocks.append({
                         "_type": "block",
@@ -527,12 +472,8 @@ workflow:
                         "children": [{"_type": "span", "text": clean}],
                     })
 
-            # ── Step 4: 查询 author _ref 和 category _ref ──
-            # 如果已有 author ref 直接用, 否则创建默认 draft
-            author_ref = AUTHOR_REF
-
-            # 查询 category 文档
-            category_name = metadata.get("category", "lifestyle")
+            # 查询 category ref
+            category_name = metadata.get("category", "mindfulness")
             query_url = f"{API_BASE}/data/query/{DATASET}"
             query = f'*[_type == "category" && slug.current == "{category_name}"][0]._id'
             query_params = f"?query={query}"
@@ -543,8 +484,19 @@ workflow:
                 query_result = json.loads(resp.read().decode("utf-8"))
                 category_ref = query_result.get("result", "")
 
-            # ── Step 5: 创建文章 ──
-            slug = metadata.get("slug", "-".join(metadata.get("title", "article").lower().split())[:80])
+            # 兜底：如果没匹配到 category，用第一个
+            if not category_ref:
+                fallback_query = '*[_type == "category"][0]._id'
+                with urlopen(Request(
+                    query_url + "?query=" + fallback_query,
+                    headers={"Authorization": f"Bearer {TOKEN}"}
+                )) as resp:
+                    fb_result = json.loads(resp.read().decode("utf-8"))
+                    category_ref = fb_result.get("result", "")
+
+            # 创建文章
+            slug = metadata.get("slug", "article")
+            slug = re.sub(r'[^a-z0-9-]', '', slug.lower())[:80]
 
             mutation = {
                 "mutations": [{
@@ -552,7 +504,7 @@ workflow:
                         "_type": "article",
                         "title": metadata.get("title", "Untitled"),
                         "slug": {"_type": "slug", "current": slug},
-                        "author": {"_type": "reference", "_ref": author_ref},
+                        "author": {"_type": "reference", "_ref": AUTHOR_REF},
                         "category": {"_type": "reference", "_ref": category_ref},
                         "heroImage": {
                             "_type": "image",
@@ -589,11 +541,11 @@ workflow:
                 - "text"
               variable_type: "string"
 
-      # ── Node 9: 结束 ──
+      # ── Node 8: 结束 ──
       - id: "end"
         type: "end"
         position:
-          x: 1840
+          x: 1600
           y: 300
         data:
           title: "完成"
@@ -606,63 +558,48 @@ workflow:
                 - "publish_result"
 
     edges:
-      # start → rss-fetch
       - id: "e-start-rss"
         source: "start"
         target: "rss-fetch"
         sourceHandle: "source"
         targetHandle: "target"
 
-      # rss-fetch → article-review
       - id: "e-rss-review"
         source: "rss-fetch"
         target: "article-review"
         sourceHandle: "source"
         targetHandle: "target"
 
-      # article-review → if-approved
       - id: "e-review-if"
         source: "article-review"
         target: "if-approved"
         sourceHandle: "source"
         targetHandle: "target"
 
-      # if-approved (true) → article-rewrite
       - id: "e-if-rewrite"
         source: "if-approved"
         target: "article-rewrite"
         sourceHandle: "approved"
         targetHandle: "target"
 
-      # if-approved (false) → end
       - id: "e-if-end"
         source: "if-approved"
         target: "end"
         sourceHandle: "rejected"
         targetHandle: "target"
 
-      # article-rewrite → generate-metadata
       - id: "e-rewrite-metadata"
         source: "article-rewrite"
         target: "generate-metadata"
         sourceHandle: "source"
         targetHandle: "target"
 
-      # generate-metadata → generate-image
-      - id: "e-metadata-image"
+      - id: "e-metadata-sanity"
         source: "generate-metadata"
-        target: "generate-image"
-        sourceHandle: "source"
-        targetHandle: "target"
-
-      # generate-image → sanity-publish
-      - id: "e-image-sanity"
-        source: "generate-image"
         target: "sanity-publish"
         sourceHandle: "source"
         targetHandle: "target"
 
-      # sanity-publish → end
       - id: "e-sanity-end"
         source: "sanity-publish"
         target: "end"

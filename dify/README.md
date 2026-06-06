@@ -16,44 +16,25 @@ The Candid Care 内容管道通过 Dify Workflow 实现从 RSS 源到 Sanity CMS
 
 | 条件 | 状态 | 获取方式 |
 |------|------|----------|
-| Dify 账号 (Cloud 或 Self-hosted) | 必须 | https://dify.ai |
-| Sanity Project ID + API Token | 必须 | Sanity Dashboard → API |
-| Sanity 中已完成初始配置 | 必须 | 至少一个 Author 和一个 Category 文档 |
-| OpenAI API Key (或兼容) | 必须 | Dify 模型供应商配置 |
-| AI 图片生成 API | 推荐 | 如 OpenAI DALL-E、Stability AI、Midjourney API |
-| 2+ 个 RSS 健康类源 | 推荐 | 见下方推荐源列表 |
+| Dify 账号 (Cloud 或 Self-hosted) | 必须 | https://cloud.dify.ai |
+| Sanity Project ID + API Token | ✅ 已配 | o06jwzs8, Token 需填入 |
+| Sanity 初始内容 | ✅ 已创建 | Author + 7 Categories |
+| DeepSeek API Key | 必须 | https://platform.deepseek.com/api_keys |
+| 图片生成 | ✅ 内置 | 自动生成暖色渐变 SVG 占位图 |
+| 4 个 RSS 健康类源 | ✅ 已配 | Harvard Health, Sleep Foundation 等 |
 
-### 2. Sanity 初始化
+### 2. Sanity 初始化 ✅ 已完成
 
-在导入工作流前，确保 Sanity Studio 中已有：
+Author 和 7 个 Category 已自动创建：
 
-```bash
-# 1. 创建一个作者
-# Sanity Studio → Author → 新建
-# Name: "The Candid Care Editorial Team"
-# 记下生成的 _id
+- **Author**: Dr. Emma Chen (`author-default`)
+- **Categories**: Mindfulness, Nutrition, Movement, Sleep, Mental Health, Relationships, Self-Care
 
-# 2. 创建分类
-# Sanity Studio → Category → 依次创建：
-# - Nutrition (_id 备用)
-# - Fitness
-# - Mental Health
-# - Sleep
-# - Longevity
-# - Lifestyle
-# - Nutrition Facts
-```
+### 3. DeepSeek API Key (唯一需要获取的新 Key)
 
-> **重要**: 记下 Author 的 `_id`（格式: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`），后续配置环境变量 `AUTHOR_REF_ID` 时使用。
-
-### 3. Sanity API Token
-
-1. 进入 [Sanity Dashboard](https://www.sanity.io/manage)
-2. 选择项目 → **API** → **Tokens**
-3. 点击 **Add API token**
-4. Token name: `Dify Automation Pipeline`
-5. Permissions: **Editor**
-6. 复制生成的 Token → 配置到 Dify 环境变量 `SANITY_API_TOKEN`
+1. 打开 https://platform.deepseek.com/api_keys → 登录
+2. 点 **创建 API key** → 复制 `sk-...`
+3. 记下这个 Key，后续在 Dify 配置模型供应商时使用
 
 ---
 
@@ -77,18 +58,25 @@ The Candid Care 内容管道通过 Dify Workflow 实现从 RSS 源到 Sanity CMS
 
 ## 环境变量配置
 
-在 Dify Workflow → **功能** → **环境变量** 中配置：
+导入 workflow.yml 后，大部分变量已预填。只需在 Dify → **功能** → **环境变量** 中更新：
 
-| 变量名 | 类型 | 说明 | 示例 |
-|--------|------|------|------|
-| `RSS_FEED_URLS` | 文本 | 换行分隔的 RSS 源 | `https://www.health.harvard.edu/blog/feed` |
-| `SANITY_PROJECT_ID` | 文本 | Sanity 项目 ID | `abc123def` |
-| `SANITY_DATASET` | 文本 | Sanity 数据集 | `production` |
-| `SANITY_API_TOKEN` | 密钥 | Sanity Editor Token | `sk...` |
-| `AUTHOR_REF_ID` | 文本 | 默认作者 Sanity _id | `drafts.xxx-xxx` |
-| `IMAGE_GEN_API_URL` | 文本 | 图片生成 API 地址 | `https://api.openai.com/v1/images/generations` |
-| `IMAGE_GEN_API_KEY` | 密钥 | 图片生成 API Key | `sk-...` |
-| `SITE_PUBLIC_URL` | 文本 | 站点公开地址 | `https://thecandidcare.com` |
+| 变量名 | 类型 | 当前状态 | 说明 |
+|--------|------|----------|------|
+| `RSS_FEED_URLS` | 文本 | ✅ 已填 | 4 个健康类 RSS 源 |
+| `SANITY_PROJECT_ID` | 文本 | ✅ 已填 `o06jwzs8` | Sanity 项目 ID |
+| `SANITY_DATASET` | 文本 | ✅ 已填 `production` | Sanity 数据集 |
+| `SANITY_API_TOKEN` | 密钥 | ⚠️ 需填入 | 你之前创建的 Sanity Token |
+| `AUTHOR_REF_ID` | 文本 | ✅ 已填 `author-default` | 默认作者引用 |
+| `SITE_PUBLIC_URL` | 文本 | ✅ 已填 | `https://the-candid-care.vercel.app` |
+
+> 只需要填 **1 个**变量：`SANITY_API_TOKEN`（你在 Sanity 后台创建的 Token）。
+
+### 配置 DeepSeek 模型供应商
+
+这是最重要的一步：
+1. Dify 右上角头像 → **设置** → **模型供应商**
+2. 找到 **DeepSeek** → 点击 → **添加**
+3. 填入你的 DeepSeek API Key → **保存**
 
 ---
 
@@ -213,23 +201,21 @@ dify/
 
 ## 常见问题
 
-### Q: 图片生成 API 选哪个？
+### Q: 图片怎么处理？
 
-| 服务 | API 地址 | 风格 |
-|------|---------|------|
-| **DALL-E 3** | `https://api.openai.com/v1/images/generations` | 写实、高质量 |
-| **Stability AI** | `https://api.stability.ai/v1/generation/...` | 可控性强 |
-| **Midjourney** | 需第三方 API 中转 | 艺术感强 |
-
-> 推荐 DALL-E 3 作为起步，配置最简单。
+工作流内置了占位图生成：自动创建一张暖色调渐变的 SVG 图片（品牌色 `#1C1A17 → #A16207 → #FAFAF8`）作为文章封面。后续如需接入 AI 图片生成（DALL-E 等），在工作流中加一个 HTTP 节点即可。
 
 ### Q: 如何避免重复发布同一篇文章？
 
-RSS 节点的去重逻辑基于 `source_url`，同一来源 24 小时内只处理一次。
+去重基于 `source_url`，同一来源在全量数据中只处理一次（RSS 节点 24h 窗口内去重）。
 
 ### Q: 如何调整改写风格？
 
-修改 `prompts/rewrite.md` 中的 Brand Voice Guidelines，然后在 Dify 中更新 LLM 节点的 System Prompt。
+修改 `prompts/rewrite.md` 中的 Brand Voice Guidelines，然后在 Dify LLM 节点中更新 System Prompt。
+
+### Q: DeepSeek 和 OpenAI 有什么区别？
+
+DeepSeek 的 API 完全兼容 OpenAI 格式，价格更低（约 ¥1/百万 token）。本次改写任务用 `deepseek-chat` 模型，效果与 GPT-4o 相当。
 
 ### Q: 构建失败怎么办？
 
@@ -237,5 +223,5 @@ RSS 节点的去重逻辑基于 `source_url`，同一来源 24 小时内只处�
 2. 常见原因:
    - RSS 源不可达 → 更换源或添加备用源
    - Sanity Token 过期 → 重新生成
-   - 图片 API 配额不足 → 检查 API 用量
+   - DeepSeek 余额不足 → 充值或切换模型
    - 分类 slug 不匹配 → 检查 Sanity 中分类的 slug
