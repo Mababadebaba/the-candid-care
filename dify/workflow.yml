@@ -1,29 +1,17 @@
-# The Candid Care — Dify Workflow DSL (DeepSeek 版)
-#
-# 导入方式: Dify Studio → 创建应用 → 导入 DSL
-# 模型: DeepSeek (deepseek-chat)
-# 图片: 内置占位图生成 (无需外部图片 API)
-#
-# 管道流程:
-#   [定时触发] → [RSS 采集] → [内容审核] → [AI 改写]
-#   → [SEO/GEO 元数据] → [Sanity 发布]
-
-version: 0.1.2
-kind: app
-type: workflow
 app:
-  name: "The Candid Care — Content Pipeline"
-  mode: workflow
   description: >
     自动化内容管道：定时从 RSS 源采集健康与生活方式文章，
-    AI 审核并改写为 The Candid Care 品牌风格 (DeepSeek)，
+    DeepSeek AI 审核并改写为 The Candid Care 品牌风格，
     自动发布到 Sanity CMS 并触发站点重建。
-  icon: "🤖"
+  icon: "\U0001F916"
   icon_background: "#1C1A17"
-
+  mode: advanced-chat
+  name: "The Candid Care \u2014 Content Pipeline"
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.2
 workflow:
   conversation_variables: []
-
   environment_variables:
     - key: RSS_FEED_URLS
       name: RSS源地址列表
@@ -34,75 +22,189 @@ workflow:
         https://www.sleepfoundation.org/feed
         https://www.psychologytoday.com/us/blog/feed
         https://www.nutritionfacts.org/feed
-
     - key: SANITY_PROJECT_ID
       name: Sanity 项目 ID
       type: string
       description: 从 Sanity Dashboard 获取
       value: "o06jwzs8"
-
     - key: SANITY_DATASET
       name: Sanity 数据集
       type: string
       description: 通常为 production
       value: "production"
-
     - key: SANITY_API_TOKEN
       name: Sanity API Token
       type: secret
       description: Sanity Dashboard → API → Tokens → Editor 权限
       value: ""
-
     - key: AUTHOR_REF_ID
-      name: 默认作者 Sanity _id
+      name: 默认作者 ID
       type: string
       description: 自动创建的默认作者引用
       value: "author-default"
-
     - key: SITE_PUBLIC_URL
       name: 站点公开地址
       type: string
       description: 用于引用原文链接
       value: "https://the-candid-care.vercel.app"
-
   features:
-    opening_statement: ""
-    suggested_questions: []
-    suggested_questions_after_answer:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
       enabled: false
-    more_like_this:
+      fileUploadConfig:
+        audio_file_size_limit: 500
+        batch_count_limit: 50
+        file_size_limit: 100
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    opening_statement: ""
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
       enabled: false
     speech_to_text:
       enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
     text_to_speech:
       enabled: false
-    file_upload:
-      enabled: false
-
+      language: ""
+      voice: ""
   graph:
+    edges:
+      # start → rss-fetch
+      - data:
+          isInIteration: false
+          sourceType: start
+          targetType: code
+        id: start-source-rss-target
+        source: start
+        sourceHandle: source
+        target: rss-fetch
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # rss-fetch → article-review
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: llm
+        id: rss-source-review-target
+        source: rss-fetch
+        sourceHandle: source
+        target: article-review
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # article-review → if-approved
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: if-else
+        id: review-source-if-target
+        source: article-review
+        sourceHandle: source
+        target: if-approved
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # if-approved (approved) → article-rewrite
+      - data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: llm
+        id: if-approved-true-rewrite-target
+        source: if-approved
+        sourceHandle: "true"
+        target: article-rewrite
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # if-approved (rejected) → end
+      - data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: answer
+        id: if-approved-false-end-target
+        source: if-approved
+        sourceHandle: "false"
+        target: end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # article-rewrite → generate-metadata
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: llm
+        id: rewrite-source-metadata-target
+        source: article-rewrite
+        sourceHandle: source
+        target: generate-metadata
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # generate-metadata → sanity-publish
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: metadata-source-sanity-target
+        source: generate-metadata
+        sourceHandle: source
+        target: sanity-publish
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # sanity-publish → end
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: sanity-source-end-target
+        source: sanity-publish
+        sourceHandle: source
+        target: end
+        targetHandle: target
+        type: custom
+        zIndex: 0
     nodes:
-      # ── Node 1: 定时触发 ──
-      - id: "start"
-        type: "start"
+      # ── Node 1: Start ──
+      - data:
+          desc: "每 6 小时自动运行（需在应用设置中配置定时触发器）"
+          selected: false
+          title: 开始
+          type: start
+          variables: []
+        height: 54
+        id: start
         position:
           x: 80
-          y: 300
-        data:
-          title: "定时触发"
-          desc: "每 6 小时自动运行"
-          type: "start"
-          variables: []
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
 
-      # ── Node 2: RSS 采集 ──
-      - id: "rss-fetch"
-        type: "code"
-        position:
-          x: 280
-          y: 300
-        data:
-          title: "RSS 采集"
-          desc: "并行抓取多个 RSS 源"
-          code_language: "python3"
+      # ── Node 2: RSS 采集 (Code) ──
+      - data:
           code: |
             """
             从配置的 RSS 源抓取最近 24 小时的文章
@@ -111,10 +213,9 @@ workflow:
             import xml.etree.ElementTree as ET
             from datetime import datetime, timedelta, timezone
             from urllib.request import Request, urlopen
-            from urllib.error import URLError
             import re
 
-            feed_urls_str = """{{env.RSS_FEED_URLS}}"""
+            feed_urls_str = """{{#env.RSS_FEED_URLS#}}"""
             feed_urls = [u.strip() for u in feed_urls_str.split("\n") if u.strip() and u.strip().startswith("http")]
 
             all_articles = []
@@ -159,112 +260,143 @@ workflow:
                     seen.add(a["source_url"])
                     unique_articles.append(a)
 
-            print(json.dumps({
-                "total_found": len(unique_articles),
-                "articles": unique_articles[:5],
-            }, ensure_ascii=False))
+            print(json.dumps(unique_articles[:5], ensure_ascii=False))
+          code_language: python3
+          desc: 并行抓取多个 RSS 健康源
+          outputs:
+            articles_json:
+              children: null
+              type: string
+          selected: false
+          title: RSS 采集
+          type: code
           variables:
-            - variable: "articles_json"
-              value_selector:
-                - "rss-fetch"
-                - "text"
-              variable_type: "string"
-
-      # ── Node 3: 内容审核 ──
-      - id: "article-review"
-        type: "llm"
+            - value_selector: []
+              variable: articles_json
+        height: 54
+        id: rss-fetch
         position:
-          x: 500
-          y: 300
-        data:
-          title: "内容审核"
-          desc: "DeepSeek 评估文章质量与匹配度"
+          x: 384
+          y: 282
+        positionAbsolute:
+          x: 384
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # ── Node 3: 内容审核 (LLM) ──
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: DeepSeek 评估文章质量与匹配度
           model:
-            mode: "chat"
-            name: "deepseek-chat"
-            provider: "deepseek"
             completion_params:
-              temperature: 0.3
               max_tokens: 500
+              temperature: 0.3
+            mode: chat
+            name: deepseek-chat
+            provider: deepseek
           prompt_template:
-            - role: "system"
+            - id: review-system
+              role: system
               text: |
                 You are the editorial gatekeeper for The Candid Care, a premium wellness publication.
 
                 Evaluate the article below. Return ONLY a JSON object:
 
-                ```json
                 {
                   "approved": true/false,
                   "quality_score": 1-5,
                   "category": "mindfulness|nutrition|movement|sleep|mental-health|relationships|self-care",
                   "reasoning": "brief explanation"
                 }
-                ```
 
                 APPROVE: Evidence-based health, nutrition, fitness, sleep, mental health, mindfulness, self-care.
                 REJECT: Celebrity gossip, politics, unsupported alternative medicine, product reviews without science, pure PR.
-
-            - role: "user"
-              text: |
-                Evaluate this article:
-                Title: {{rss-fetch.output.title}}
-                Source: {{rss-fetch.output.source_url}}
-                Content: {{rss-fetch.output.content_preview}}
-          variables:
-            - variable: "review_result"
-              value_selector:
-                - "article-review"
-                - "text"
-              variable_type: "string"
+            - id: review-user
+              role: user
+              text: "Evaluate this article:\nTitle: {{#rss-fetch.articles_json#}}\n\nReturn JSON only."
+          selected: false
+          title: 内容审核
+          type: llm
+          variables: []
+        height: 98
+        id: article-review
+        position:
+          x: 688
+          y: 282
+        positionAbsolute:
+          x: 688
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
 
       # ── Node 4: 条件判断 ──
-      - id: "if-approved"
-        type: "if-else"
+      - data:
+          cases:
+            - case_id: "true"
+              conditions:
+                - comparison_operator: contains
+                  id: cond-approved
+                  value: '"approved": true'
+                  varType: string
+                  variable_selector:
+                    - article-review
+                    - text
+              id: "true"
+              logical_operator: and
+            - case_id: "false"
+              conditions:
+                - comparison_operator: contains
+                  id: cond-rejected
+                  value: '"approved": false'
+                  varType: string
+                  variable_selector:
+                    - article-review
+                    - text
+              id: "false"
+              logical_operator: and
+          desc: 质量评分 ≥ 3 继续处理
+          selected: false
+          title: 是否通过审核?
+          type: if-else
+        height: 126
+        id: if-approved
         position:
-          x: 720
-          y: 300
-        data:
-          title: "是否通过审核?"
-          desc: "quality ≥ 3 继续处理"
-          conditions:
-            - comparison_operator: "contains"
-              variable_selector:
-                - "article-review"
-                - "review_result"
-              value: '"approved": true'
-              logical_operator: "and"
-            - comparison_operator: "contains"
-              variable_selector:
-                - "article-review"
-                - "review_result"
-              value: '"quality_score": 3'
-        cases:
-          - case_id: "true"
-            id: "approved"
-            title: "通过"
-          - case_id: "false"
-            id: "rejected"
-            title: "拒绝"
+          x: 992
+          y: 282
+        positionAbsolute:
+          x: 992
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
 
-      # ── Node 5: AI 改写 ──
-      - id: "article-rewrite"
-        type: "llm"
-        position:
-          x: 940
-          y: 300
-        data:
-          title: "AI 改写"
-          desc: "DeepSeek 重写为品牌风格"
+      # ── Node 5: AI 改写 (LLM) ──
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: DeepSeek 重写为品牌风格
           model:
-            mode: "chat"
-            name: "deepseek-chat"
-            provider: "deepseek"
             completion_params:
-              temperature: 0.7
               max_tokens: 3000
+              temperature: 0.7
+            mode: chat
+            name: deepseek-chat
+            provider: deepseek
           prompt_template:
-            - role: "system"
+            - id: rewrite-system
+              role: system
               text: |
                 You are a senior wellness editor at The Candid Care. Rewrite the article below in our brand voice.
 
@@ -290,44 +422,52 @@ workflow:
                 - NEVER: fear-mongering, miracle claims, clickbait
 
                 Return ONLY the HTML body (no title, no <html> wrapper):
-            - role: "user"
+            - id: rewrite-user
+              role: user
               text: |
-                Category: {{article-review.output.review_result}}
-                Original: {{rss-fetch.output.title}}
-                Source: {{rss-fetch.output.source_url}}
-                Content: {{rss-fetch.output.content_preview}}
+                I need you to rewrite this article content for The Candid Care wellness publication.
 
-                Please rewrite for The Candid Care.
-          variables:
-            - variable: "rewritten_body"
-              value_selector:
-                - "article-rewrite"
-                - "text"
-              variable_type: "string"
+                Original source info:
+                {{#article-review.text#}}
 
-      # ── Node 6: SEO/GEO 元数据 ──
-      - id: "generate-metadata"
-        type: "llm"
+                Please rewrite in our brand voice and return HTML body only.
+          selected: false
+          title: AI 改写
+          type: llm
+          variables: []
+        height: 98
+        id: article-rewrite
         position:
-          x: 1160
-          y: 300
-        data:
-          title: "SEO 元数据"
-          desc: "生成标题/描述/FAQ/标签"
+          x: 1296
+          y: 182
+        positionAbsolute:
+          x: 1296
+          y: 182
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # ── Node 6: SEO 元数据 (LLM) ──
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: 生成标题/描述/FAQ/标签
           model:
-            mode: "chat"
-            name: "deepseek-chat"
-            provider: "deepseek"
             completion_params:
-              temperature: 0.4
               max_tokens: 1500
+              temperature: 0.4
+            mode: chat
+            name: deepseek-chat
+            provider: deepseek
           prompt_template:
-            - role: "system"
+            - id: seo-system
+              role: system
               text: |
                 You are an SEO strategist. For the article below, generate metadata as a JSON object.
-
                 Return ONLY valid JSON:
-                ```json
                 {
                   "title": "SEO title (50-65 chars)",
                   "seoDescription": "Meta description (140-155 chars, include CTA)",
@@ -341,48 +481,48 @@ workflow:
                   ],
                   "slug": "url-friendly-slug"
                 }
-                ```
-
                 SEO rules:
                 - Title: Include primary keyword, under 65 chars
                 - Description: Action verb + value prop, under 155 chars
                 - FAQs: Reflect "People Also Ask" patterns
                 - Tags: lowercase, hyphenated
-            - role: "user"
-              text: |
-                Category: {{article-review.output.review_result}}
-                Rewritten Body (first 500 chars): {{article-rewrite.output.rewritten_body[:500]}}
-          variables:
-            - variable: "metadata_json"
-              value_selector:
-                - "generate-metadata"
-                - "text"
-              variable_type: "string"
-
-      # ── Node 7: Sanity 发布 (含占位图) ──
-      - id: "sanity-publish"
-        type: "code"
+            - id: seo-user
+              role: user
+              text: "Rewrite this article for The Candid Care:\n\nCategories: {{#article-review.text#}}\n\nRewritten body: {{#article-rewrite.text#}}"
+          selected: false
+          title: SEO 元数据
+          type: llm
+          variables: []
+        height: 98
+        id: generate-metadata
         position:
-          x: 1380
-          y: 300
-        data:
-          title: "Sanity 发布"
-          desc: "生成占位图并创建文章"
-          code_language: "python3"
+          x: 1600
+          y: 282
+        positionAbsolute:
+          x: 1600
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # ── Node 7: Sanity 发布 (Code) ──
+      - data:
           code: |
             """
-            Sanity API — 生成占位图并创建文章文档
+            Sanity API — 生成文章并发布
             """
             import json
-            from datetime import datetime, timezone
-            from urllib.request import Request, urlopen
             import re
             import base64
+            from datetime import datetime, timezone
+            from urllib.request import Request, urlopen
 
-            PROJECT_ID = "{{env.SANITY_PROJECT_ID}}"
-            DATASET = "{{env.SANITY_DATASET}}" or "production"
-            TOKEN = "{{env.SANITY_API_TOKEN}}"
-            AUTHOR_REF = "{{env.AUTHOR_REF_ID}}"
+            PROJECT_ID = "{{#env.SANITY_PROJECT_ID#}}"
+            DATASET = "{{#env.SANITY_DATASET#}}" or "production"
+            TOKEN = "{{#env.SANITY_API_TOKEN#}}"
+            AUTHOR_REF = "{{#env.AUTHOR_REF_ID#}}"
 
             API_BASE = f"https://{PROJECT_ID}.api.sanity.io/v1"
 
@@ -396,40 +536,15 @@ workflow:
                 with urlopen(req) as resp:
                     return json.loads(resp.read().decode("utf-8"))
 
-            # 解析元数据
-            metadata_str = """{{generate-metadata.output.metadata_json}}"""
+            # 解析 SEO 元数据
+            metadata_str = """{{#generate-metadata.text#}}"""
             match = re.search(r'\{.*\}', metadata_str, re.DOTALL)
             metadata = json.loads(match.group()) if match else {}
 
-            # 生成占位图 SVG (暖色调渐变, 1200x630)
-            svg = '''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-              <defs>
-                <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1C1A17"/>
-                  <stop offset="50%" style="stop-color:#A16207"/>
-                  <stop offset="100%" style="stop-color:#FAFAF8"/>
-                </linearGradient>
-              </defs>
-              <rect width="1200" height="630" fill="url(#bg)"/>
-              <text x="600" y="315" text-anchor="middle" fill="white"
-                    font-family="Georgia,serif" font-size="42" font-weight="bold"
-                    opacity="0.9">{title}</text>
-            </svg>'''.replace("{title}", metadata.get("title", "The Candid Care"))
+            # 获取改写内容
+            body_html = """{{#article-rewrite.text#}}"""
 
-            # 上传 SVG 为图片资源
-            upload_body = {
-                "fileName": "hero-image.svg",
-                "contentType": "image/svg+xml",
-                "content": base64.b64encode(svg.encode("utf-8")).decode("utf-8"),
-            }
-            upload_result = api_post(
-                f"{API_BASE}/assets/images/{DATASET}",
-                upload_body,
-            )
-            image_asset_id = upload_result.get("document", {}).get("_id", "")
-
-            # HTML → Portable Text
-            body_html = """{{article-rewrite.output.rewritten_body}}"""
+            # HTML → Portable Text 块
             blocks = []
             chunks = re.findall(
                 r'<(h[23]|p|blockquote|ul)(?:\s[^>]*)?>(.*?)</\1>',
@@ -472,49 +587,80 @@ workflow:
                         "children": [{"_type": "span", "text": clean}],
                     })
 
-            # 查询 category ref
+            # 如果没有解析出 block，使用纯文本
+            if not blocks:
+                text = re.sub(r'<[^>]+>', '', body_html).strip()
+                paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+                blocks = [
+                    {"_type": "block", "style": "normal", "children": [{"_type": "span", "text": p[:500]}]}
+                    for p in paragraphs[:20]
+                ]
+
+            # 查询分类 ref
             category_name = metadata.get("category", "mindfulness")
             query_url = f"{API_BASE}/data/query/{DATASET}"
             query = f'*[_type == "category" && slug.current == "{category_name}"][0]._id'
-            query_params = f"?query={query}"
             with urlopen(Request(
-                query_url + query_params,
+                query_url + "?query=" + query,
                 headers={"Authorization": f"Bearer {TOKEN}"}
             )) as resp:
                 query_result = json.loads(resp.read().decode("utf-8"))
                 category_ref = query_result.get("result", "")
 
-            # 兜底：如果没匹配到 category，用第一个
+            # 兜底：第一个分类
             if not category_ref:
-                fallback_query = '*[_type == "category"][0]._id'
+                fb_query = '*[_type == "category"][0]._id'
                 with urlopen(Request(
-                    query_url + "?query=" + fallback_query,
+                    query_url + "?query=" + fb_query,
                     headers={"Authorization": f"Bearer {TOKEN}"}
                 )) as resp:
                     fb_result = json.loads(resp.read().decode("utf-8"))
                     category_ref = fb_result.get("result", "")
 
-            # 创建文章
-            slug = metadata.get("slug", "article")
-            slug = re.sub(r'[^a-z0-9-]', '', slug.lower())[:80]
+            # 占位图 (SVG 暖色渐变)
+            title = metadata.get("title", "The Candid Care")
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+              <defs>
+                <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#1C1A17"/>
+                  <stop offset="50%" style="stop-color:#A16207"/>
+                  <stop offset="100%" style="stop-color:#FAFAF8"/>
+                </linearGradient>
+              </defs>
+              <rect width="1200" height="630" fill="url(#bg)"/>
+              <text x="600" y="315" text-anchor="middle" fill="white"
+                    font-family="Georgia,serif" font-size="42" font-weight="bold"
+                    opacity="0.9">{title}</text>
+            </svg>'''
 
+            # 上传图片
+            upload_body = {
+                "fileName": "hero-image.svg",
+                "contentType": "image/svg+xml",
+                "content": base64.b64encode(svg.encode("utf-8")).decode("utf-8"),
+            }
+            upload_result = api_post(f"{API_BASE}/assets/images/{DATASET}", upload_body)
+            image_asset_id = upload_result.get("document", {}).get("_id", "")
+
+            # 创建文章
+            slug = metadata.get("slug", re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')[:80])
             mutation = {
                 "mutations": [{
                     "create": {
                         "_type": "article",
-                        "title": metadata.get("title", "Untitled"),
+                        "title": title,
                         "slug": {"_type": "slug", "current": slug},
                         "author": {"_type": "reference", "_ref": AUTHOR_REF},
                         "category": {"_type": "reference", "_ref": category_ref},
                         "heroImage": {
                             "_type": "image",
                             "asset": {"_type": "reference", "_ref": image_asset_id},
-                            "alt": metadata.get("title", ""),
+                            "alt": title,
                         },
                         "excerpt": metadata.get("excerpt", "")[:200],
                         "body": blocks,
                         "publishedAt": datetime.now(timezone.utc).isoformat(),
-                        "seoTitle": metadata.get("title", "")[:70],
+                        "seoTitle": metadata.get("title", title)[:70],
                         "seoDescription": metadata.get("seoDescription", "")[:160],
                         "tags": metadata.get("tags", []),
                         "keyTakeaways": metadata.get("keyTakeaways", []),
@@ -534,74 +680,58 @@ workflow:
                 "transaction_id": result.get("transactionId", ""),
                 "message": "Published to Sanity successfully",
             }, ensure_ascii=False))
-          variables:
-            - variable: "publish_result"
-              value_selector:
-                - "sanity-publish"
-                - "text"
-              variable_type: "string"
-
-      # ── Node 8: 结束 ──
-      - id: "end"
-        type: "end"
-        position:
-          x: 1600
-          y: 300
-        data:
-          title: "完成"
-          desc: "文章已发布，Webhook 将触发 Vercel 重建"
-          type: "end"
+          code_language: python3
+          desc: 上传占位图并创建 Sanity 文章
           outputs:
-            - variable: "status"
-              value_selector:
-                - "sanity-publish"
-                - "publish_result"
+            publish_result:
+              children: null
+              type: string
+          selected: false
+          title: Sanity 发布
+          type: code
+          variables:
+            - value_selector: []
+              variable: publish_result
+        height: 54
+        id: sanity-publish
+        position:
+          x: 1904
+          y: 282
+        positionAbsolute:
+          x: 1904
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
 
-    edges:
-      - id: "e-start-rss"
-        source: "start"
-        target: "rss-fetch"
-        sourceHandle: "source"
-        targetHandle: "target"
+      # ── Node 8: End ──
+      - data:
+          answer: |
+            ✅ 文章发布完成！
 
-      - id: "e-rss-review"
-        source: "rss-fetch"
-        target: "article-review"
-        sourceHandle: "source"
-        targetHandle: "target"
+            {{#sanity-publish.publish_result#}}
+          desc: 文章已发布，Webhook 将触发 Vercel 重建
+          selected: false
+          title: 完成
+          type: answer
+          variables: []
+        height: 100
+        id: end
+        position:
+          x: 2208
+          y: 282
+        positionAbsolute:
+          x: 2208
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
 
-      - id: "e-review-if"
-        source: "article-review"
-        target: "if-approved"
-        sourceHandle: "source"
-        targetHandle: "target"
-
-      - id: "e-if-rewrite"
-        source: "if-approved"
-        target: "article-rewrite"
-        sourceHandle: "approved"
-        targetHandle: "target"
-
-      - id: "e-if-end"
-        source: "if-approved"
-        target: "end"
-        sourceHandle: "rejected"
-        targetHandle: "target"
-
-      - id: "e-rewrite-metadata"
-        source: "article-rewrite"
-        target: "generate-metadata"
-        sourceHandle: "source"
-        targetHandle: "target"
-
-      - id: "e-metadata-sanity"
-        source: "generate-metadata"
-        target: "sanity-publish"
-        sourceHandle: "source"
-        targetHandle: "target"
-
-      - id: "e-sanity-end"
-        source: "sanity-publish"
-        target: "end"
-        sourceHandle: "source"
-        targetHandle: "target"
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
