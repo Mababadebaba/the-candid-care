@@ -1,74 +1,68 @@
 app:
-  description: The Candid Care 内容自动化管道 — RSS采集 → AI改写 → SEO元数据 → Sanity发布
+  name: "The Candid Care - Content Pipeline"
+  description: "RSS → AI Rewrite → SEO Metadata → Sanity Publish"
   icon: "📝"
-  icon_background: "#1C1A17"
+  icon_type: emoji
+  icon_background: "#A16207"
   mode: workflow
-  name: The Candid Care Auto Pipeline
   use_icon_as_answer_icon: false
-
 kind: app
-version: 0.5.0
-
+version: "0.6.0"
+dependencies:
+  - current_identifier: null
+    type: marketplace
+    value:
+      marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.1@deepseek
+      version: null
 workflow:
   conversation_variables: []
   environment_variables:
-    - name: RSS_FEED_URLS
-      value: |
-        https://www.health.harvard.edu/blog/feed
-        https://www.sleepfoundation.org/feed
-        https://www.psychologytoday.com/us/blog/feed
-        https://www.mindful.org/feed
-      type: string
-      is_secret: false
-    - name: SANITY_PROJECT_ID
-      value: o06jwzs8
-      type: string
-      is_secret: false
-    - name: SANITY_DATASET
-      value: production
-      type: string
-      is_secret: false
-    - name: SANITY_API_TOKEN
+    - description: "RSS feed URLs, one per line"
+      id: env-rss-urls
+      name: RSS_FEED_URLS
+      selector: [env, RSS_FEED_URLS]
+      value: "https://www.health.harvard.edu/blog/feed\nhttps://www.sleepfoundation.org/feed\nhttps://www.mindful.org/feed\nhttps://www.psychologytoday.com/us/blog/feed"
+      value_type: string
+    - description: "Sanity project ID"
+      id: env-sanity-project
+      name: SANITY_PROJECT_ID
+      selector: [env, SANITY_PROJECT_ID]
+      value: "o06jwzs8"
+      value_type: string
+    - description: "Sanity dataset name"
+      id: env-sanity-dataset
+      name: SANITY_DATASET
+      selector: [env, SANITY_DATASET]
+      value: "production"
+      value_type: string
+    - description: "Sanity API token (Editor permission)"
+      id: env-sanity-token
+      name: SANITY_API_TOKEN
+      selector: [env, SANITY_API_TOKEN]
       value: ""
-      type: secret
-      is_secret: true
-    - name: AUTHOR_REF_ID
-      value: author-default
-      type: string
-      is_secret: false
-    - name: SITE_PUBLIC_URL
-      value: https://the-candid-care.vercel.app
-      type: string
-      is_secret: false
-
+      value_type: string
+    - description: "Default author Sanity _id"
+      id: env-author-id
+      name: AUTHOR_REF_ID
+      selector: [env, AUTHOR_REF_ID]
+      value: "author-default"
+      value_type: string
+    - description: "Public site URL"
+      id: env-site-url
+      name: SITE_PUBLIC_URL
+      selector: [env, SITE_PUBLIC_URL]
+      value: "https://the-candid-care.vercel.app"
+      value_type: string
   features:
     file_upload:
-      allowed_file_extensions:
-        - .JPG
-        - .JPEG
-        - .PNG
-        - .GIF
-        - .WEBP
-        - .SVG
-      allowed_file_types:
-        - image
-      allowed_file_upload_methods:
-        - local_file
-        - remote_url
       enabled: false
-      fileUploadConfig:
-        audio_file_size_limit: 50
-        batch_count_limit: 5
-        file_size_limit: 15
-        image_file_size_limit: 10
-        video_file_size_limit: 100
-        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
-        transfer_methods:
-          - local_file
-          - remote_url
+        transfer_methods: [local_file, remote_url]
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods: [local_file, remote_url]
       number_limits: 3
     opening_statement: ""
     retriever_resource:
@@ -84,669 +78,467 @@ workflow:
       enabled: false
       language: ""
       voice: ""
-
   graph:
-    edges:
-      # Start → RSS Fetch
-      - data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: start
-          targetType: code
-        id: 1769000000001-source-1769000000002-target
-        source: "1769000000001"
-        sourceHandle: source
-        target: "1769000000002"
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      # RSS Fetch → Article Rewrite
-      - data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: code
-          targetType: llm
-        id: 1769000000002-source-1769000000003-target
-        source: "1769000000002"
-        sourceHandle: source
-        target: "1769000000003"
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      # Article Rewrite → SEO Metadata
-      - data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: llm
-          targetType: llm
-        id: 1769000000003-source-1769000000004-target
-        source: "1769000000003"
-        sourceHandle: source
-        target: "1769000000004"
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      # SEO Metadata → Sanity Publish
-      - data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: llm
-          targetType: code
-        id: 1769000000004-source-1769000000005-target
-        source: "1769000000004"
-        sourceHandle: source
-        target: "1769000000005"
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      # Sanity Publish → End
-      - data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: code
-          targetType: end
-        id: 1769000000005-source-1769000000006-target
-        source: "1769000000005"
-        sourceHandle: source
-        target: "1769000000006"
-        targetHandle: target
-        type: custom
-        zIndex: 0
-
     nodes:
-      # ===== NODE 1: Start =====
       - data:
-          selected: false
-          title: "定时触发"
+          title: "Start"
           type: start
+          selected: false
           variables: []
-        height: 53
-        id: "1769000000001"
+        id: "start-1"
         position:
-          x: 80
+          x: 30
           y: 300
         positionAbsolute:
-          x: 80
+          x: 30
           y: 300
-        selected: true
+        selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 242
-
-      # ===== NODE 2: RSS Fetch (Code) =====
+        width: 243
+        height: 89
       - data:
+          title: "RSS Fetch"
+          type: code
+          selected: false
+          code_language: python3
           code: |
             import feedparser
-            import json
-            import os
             import hashlib
-            from datetime import datetime, timedelta
-            import ssl
-
-            # 忽略 SSL 证书验证 (部分 RSS 源证书问题)
-            if hasattr(ssl, '_create_unverified_context'):
-                ssl._create_default_https_context = ssl._create_unverified_context
+            import os
 
             def main() -> dict:
-                """
-                从环境变量 RSS_FEED_URLS 读取多个 RSS 源，
-                抓取最近 24 小时内的文章，去重后返回。
-                """
-                feed_urls_raw = os.environ.get("RSS_FEED_URLS", "")
-                if not feed_urls_raw.strip():
-                    return {"articles_json": "[]", "article_count": 0, "error": "RSS_FEED_URLS is empty"}
+                urls = [u.strip() for u in os.environ.get("RSS_FEED_URLS", "{{#env.RSS_FEED_URLS#}}").split("\n") if u.strip()]
+                articles = []
+                seen = set()
 
-                feed_urls = [url.strip() for url in feed_urls_raw.strip().split("\n") if url.strip()]
-
-                cutoff_time = datetime.utcnow() - timedelta(hours=24)
-                all_articles = []
-                seen_urls = set()
-
-                for url in feed_urls:
+                for url in urls:
                     try:
                         feed = feedparser.parse(url)
-                        source_title = feed.feed.get("title", "Unknown Source")
-
-                        for entry in feed.entries:
-                            entry_url = entry.get("link", "")
-                            if not entry_url or entry_url in seen_urls:
+                        for entry in feed.entries[:5]:
+                            link = entry.get("link", "")
+                            h = hashlib.md5(link.encode()).hexdigest()
+                            if h in seen:
                                 continue
-
-                            # 检查发布时间
-                            published = None
-                            if hasattr(entry, "published_parsed") and entry.published_parsed:
-                                published = datetime(*entry.published_parsed[:6])
-                            elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
-                                published = datetime(*entry.updated_parsed[:6])
-
-                            if published and published < cutoff_time:
-                                continue
-
-                            seen_urls.add(entry_url)
-                            all_articles.append({
+                            seen.add(h)
+                            articles.append({
                                 "title": entry.get("title", ""),
-                                "url": entry_url,
-                                "source": source_title,
-                                "summary": entry.get("summary", ""),
-                                "published": published.isoformat() if published else ""
+                                "link": link,
+                                "summary": entry.get("summary", "")[:500],
+                                "source": feed.feed.get("title", url),
+                                "published": entry.get("published", "")
                             })
-                    except Exception as e:
-                        print(f"Error fetching {url}: {e}")
+                    except Exception:
                         continue
 
                 return {
-                    "articles_json": json.dumps(all_articles, ensure_ascii=False),
-                    "article_count": len(all_articles),
-                    "error": ""
+                    "articles": articles,
+                    "count": len(articles),
+                    "json": str(articles)
                 }
-          code_language: python3
           outputs:
-            articles_json:
-              children: null
-              type: string
-            article_count:
-              children: null
+            articles:
+              type: array[object]
+            count:
               type: number
-            error:
-              children: null
+            json:
               type: string
           selected: false
-          title: "RSS 采集"
-          type: code
-          variables: []
-        height: 52
-        id: "1769000000002"
+        id: "rss-fetch"
         position:
-          x: 382
+          x: 320
           y: 300
         positionAbsolute:
-          x: 382
+          x: 320
           y: 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 242
-
-      # ===== NODE 3: Article Rewrite (LLM) =====
+        width: 243
+        height: 89
       - data:
-          context:
-            enabled: false
-            variable_selector: []
+          title: "AI Rewrite"
+          type: llm
+          selected: false
           model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
             completion_params:
               temperature: 0.7
-            mode: chat
-            name: deepseek-chat
-            provider: langgenius/deepseek/deepseek
           prompt_template:
-            - id: a1b2c3d4-1111-1111-1111-111111111111
+            - id: rewrite-sys
               role: system
               text: |
-                You are The Candid Care's senior wellness editor. Your job is to rewrite one health/wellness article from an RSS feed into the brand voice.
+                You are a senior wellness editor for "The Candid Care" — a premium health & wellness publication.
 
-                ## Brand Voice & Style Guide
-                - **Tone**: Warm, compassionate, evidence-based, never preachy
-                - **Structure**: 5-section format:
-                  1. Hook (1 paragraph — relatable opening that connects emotionally)
-                  2. The Science (2-3 paragraphs — evidence, studies, expert context)
-                  3. The Practice (2-3 paragraphs — actionable, practical guidance)
-                  4. Common Pitfalls (1-2 paragraphs — what to watch out for)
-                  5. Closing Reflection (1 paragraph — gentle, inspiring wrap-up)
-                - **Length**: 800-1200 words total
-                - **Language**: Clean, accessible English; avoid jargon; Flesch-Kincaid grade 8-10
-                - **Point of View**: Second person ("you") for connection, first person plural ("we") sparingly
-                - **Quotes**: If the original article has expert quotes, keep them and attribute properly
+                BRAND VOICE:
+                - Warm, compassionate, evidence-based
+                - Accessible yet authoritative (8th-grade reading level)
+                - Empowering without being preachy
+                - Use "you" to connect with the reader
 
-                ## Output Format
-                Return a structured JSON object:
-                ```json
-                {
-                  "title": "SEO-optimized title (50-70 chars)",
-                  "category": "one of: mindfulness, nutrition, movement, sleep, mental-health, relationships, self-care",
-                  "excerpt": "Compelling excerpt (120-160 chars)",
-                  "body_html": "<h2>Hook</h2><p>...</p><h2>The Science</h2>...",
-                  "tags": ["tag1", "tag2", "tag3"],
-                  "source_url": "original article URL",
-                  "source_name": "original source name"
-                }
-                ```
+                ARTICLE STRUCTURE (5 sections):
+                1. Hook — Start with a relatable insight or question
+                2. Why It Matters — The science/context in plain language
+                3. The How-To — 3-4 actionable, specific strategies
+                4. Common Pitfalls — What to avoid
+                5. The Bottom Line — A warm, encouraging takeaway (2-3 sentences)
 
-                Only output valid JSON — no markdown code fences, no extra commentary.
-            - id: a1b2c3d4-2222-2222-2222-222222222222
+                FORMAT RULES:
+                - Title: 40-60 chars, compelling, include target keyword
+                - Word count: 600-900 words
+                - Use markdown headings (##) for each section
+                - No markdown in the title line
+                - First line = title, rest = body
+            - id: rewrite-user
               role: user
               text: |
-                Here are the RSS articles to process. Choose only the best ONE (highest relevance to wellness, most actionable, most inspiring):
+                Rewrite this article in The Candid Care style:
 
-                {{#1769000000002.articles_json#}}
+                Original title: {{#rss-fetch.articles#[0].title#}}
+                Original source: {{#rss-fetch.articles#[0].link#}}
 
-                If none of the articles are suitable for The Candid Care, return:
-                {"skip": true, "reason": "No suitable articles found"}
-          selected: false
-          title: "AI 改写"
-          type: llm
-          vision:
-            enabled: false
-        height: 88
-        id: "1769000000003"
-        position:
-          x: 684
-          y: 300
-        positionAbsolute:
-          x: 684
-          y: 300
-        selected: false
-        sourcePosition: right
-        targetPosition: left
-        type: custom
-        width: 242
+                Content:
+                {{#rss-fetch.articles#[0].summary#}}
 
-      # ===== NODE 4: SEO Metadata (LLM) =====
-      - data:
+                Output format:
+                Line 1: The new title only
+                Then a blank line
+                Then the article body with ## section headings
           context:
             enabled: false
             variable_selector: []
-          model:
-            completion_params:
-              temperature: 0.5
-            mode: chat
-            name: deepseek-chat
-            provider: langgenius/deepseek/deepseek
-          prompt_template:
-            - id: b2c3d4e5-3333-3333-3333-333333333333
-              role: system
-              text: |
-                You are an SEO and GEO (Generative Engine Optimization) specialist for The Candid Care wellness blog.
-
-                Given a rewritten article (JSON format), generate the following SEO metadata:
-
-                ## Output Format (valid JSON only)
-                ```json
-                {
-                  "seo_title": "SEO title tag (50-60 chars, include primary keyword)",
-                  "meta_description": "Meta description (150-160 chars, include CTA)",
-                  "faqs": [
-                    {"question": "FAQ question 1", "answer": "Concise, helpful answer"},
-                    {"question": "FAQ question 2", "answer": "Concise, helpful answer"},
-                    {"question": "FAQ question 3", "answer": "Concise, helpful answer"}
-                  ],
-                  "key_takeaways": [
-                    "Key takeaway 1 (1 sentence)",
-                    "Key takeaway 2 (1 sentence)",
-                    "Key takeaway 3 (1 sentence)"
-                  ],
-                  "reading_time_minutes": 5,
-                  "focus_keyword": "primary SEO keyword phrase"
-                }
-                ```
-
-                ## Rules
-                - FAQ questions should mirror real Google "People Also Ask" queries
-                - Key takeaways must be scannable and GEO-optimized (Google SGE / AI overviews)
-                - Use the brand's primary categories: mindfulness, nutrition, movement, sleep, mental-health, relationships, self-care
-                - Only output valid JSON
-            - id: b2c3d4e5-4444-4444-4444-444444444444
-              role: user
-              text: |
-                Here is the rewritten article. If it contains {"skip": true}, output {"skip": true}:
-
-                {{#1769000000003.text#}}
-          selected: false
-          title: "SEO 元数据"
-          type: llm
+          memory:
+            query_prompt_template: ""
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 50
           vision:
             enabled: false
-        height: 88
-        id: "1769000000004"
+          selected: false
+        id: "rewrite"
         position:
-          x: 986
+          x: 610
           y: 300
         positionAbsolute:
-          x: 986
+          x: 610
           y: 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 242
-
-      # ===== NODE 5: Sanity Publish (Code) =====
+        width: 243
+        height: 89
       - data:
+          title: "SEO Metadata"
+          type: llm
+          selected: false
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params:
+              temperature: 0.3
+          prompt_template:
+            - id: seo-sys
+              role: system
+              text: |
+                You are an SEO/GEO metadata generator for "The Candid Care" wellness website.
+                Generate structured metadata for the rewritten article.
+                Output ONLY valid JSON — no markdown, no explanation.
+            - id: seo-user
+              role: user
+              text: |
+                Article:
+                {{#rewrite.text#}}
+
+                Generate this JSON:
+                {
+                  "seo_title": "SEO title (55-65 chars, include primary keyword)",
+                  "seo_description": "Meta description (140-160 chars, compelling CTA)",
+                  "category": "one of: mindfulness, nutrition, movement, sleep, mental-health, relationships, self-care",
+                  "tags": ["tag1", "tag2", "tag3"],
+                  "excerpt": "Article excerpt (100-150 chars)",
+                  "key_takeaways": ["takeaway 1", "takeaway 2", "takeaway 3"],
+                  "faqs": [
+                    {"question": "...", "answer": "..."},
+                    {"question": "...", "answer": "..."},
+                    {"question": "...", "answer": "..."}
+                  ]
+                }
+          context:
+            enabled: false
+            variable_selector: []
+          memory:
+            query_prompt_template: ""
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 50
+          vision:
+            enabled: false
+          selected: false
+        id: "seo-meta"
+        position:
+          x: 900
+          y: 300
+        positionAbsolute:
+          x: 900
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 243
+        height: 89
+      - data:
+          title: "Publish to Sanity"
+          type: code
+          selected: false
+          code_language: python3
           code: |
             import json
-            import os
-            import re
-            import html
-            from urllib.request import Request, urlopen
-            from urllib.error import URLError
-            import ssl
+            import urllib.request
+            import urllib.parse
 
-            ssl._create_default_https_context = ssl._create_unverified_context
+            def main(article_text: str, seo_json: str) -> dict:
+                proj_id = "{{#env.SANITY_PROJECT_ID#}}"
+                dataset = "{{#env.SANITY_DATASET#}}"
+                token = "{{#env.SANITY_API_TOKEN#}}"
+                author_id = "{{#env.AUTHOR_REF_ID#}}"
+                site_url = "{{#env.SITE_PUBLIC_URL#}}"
 
-            def html_to_portable_text(html_str: str) -> list:
-                """Convert basic HTML to Sanity Portable Text blocks."""
+                # Parse inputs
+                lines = article_text.strip().split("\n")
+                title = lines[0].strip("# ").strip()
+                body = "\n".join(lines[1:]).strip()
+
+                try:
+                    meta = json.loads(seo_json)
+                except:
+                    meta = {
+                        "seo_title": title,
+                        "seo_description": title,
+                        "category": "self-care",
+                        "tags": ["wellness"],
+                        "excerpt": body[:150],
+                        "key_takeaways": ["Practice daily."],
+                        "faqs": [{"question": "What is this about?", "answer": body[:100]}]
+                    }
+
+                # Generate placeholder image SVG (warm gradient)
+                svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+                  <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#1C1A17"/>
+                  <stop offset="50%" style="stop-color:#A16207"/>
+                  <stop offset="100%" style="stop-color:#FAFAF8"/>
+                  </linearGradient></defs>
+                  <rect width="1200" height="630" fill="url(#g)"/>
+                  <text x="600" y="315" text-anchor="middle" fill="white" font-size="42" font-family="Georgia,serif">{title[:80]}</text>
+                  </svg>'''
+
+                # Upload image
+                img_url = f"https://{proj_id}.api.sanity.io/v2023-08-01/assets/images/{dataset}"
+                img_req = urllib.request.Request(img_url, data=svg.encode(), method="POST")
+                img_req.add_header("Authorization", f"Bearer {token}")
+                img_req.add_header("Content-Type", "image/svg+xml")
+                try:
+                    img_resp = json.loads(urllib.request.urlopen(img_req).read())
+                    image_ref = {"_type": "image", "asset": {"_type": "reference", "_ref": img_resp["document"]["_id"]}}
+                except:
+                    image_ref = None
+
+                # Build portable text from markdown
                 blocks = []
-                # Remove HTML comments
-                html_str = re.sub(r'<!--.*?-->', '', html_str, flags=re.DOTALL)
-                # Split by block-level tags
-                parts = re.split(r'(<(?:h[1-3]|p|ul|ol|blockquote)[^>]*>.*?</(?:h[1-3]|p|ul|ol|blockquote)>)', html_str, flags=re.DOTALL)
-
-                for part in parts:
-                    part = part.strip()
-                    if not part:
+                for line in body.split("\n"):
+                    line = line.strip()
+                    if not line:
                         continue
-
-                    # Heading
-                    h_match = re.match(r'<h([1-3])[^>]*>(.*?)</h\1>', part, re.DOTALL)
-                    if h_match:
-                        level = int(h_match.group(1))
-                        # Get plain text from heading (strip inner HTML)
-                        inner = re.sub(r'<[^>]+>', '', h_match.group(2)).strip()
-                        style = ['h2', 'h3', 'h3'][level - 1] if level <= 3 else 'h3'
+                    if line.startswith("## "):
                         blocks.append({
                             "_type": "block",
-                            "style": style,
-                            "children": [{"_type": "span", "text": inner}]
+                            "style": "h2",
+                            "children": [{"_type": "span", "text": line[3:].strip(), "marks": []}]
                         })
-                        continue
-
-                    # Paragraph
-                    p_match = re.match(r'<p[^>]*>(.*?)</p>', part, re.DOTALL)
-                    if p_match:
-                        inner = p_match.group(1).strip()
-                        children = parse_inline(inner)
+                    elif line.startswith("# "):
+                        blocks.append({
+                            "_type": "block",
+                            "style": "h2",
+                            "children": [{"_type": "span", "text": line[2:].strip(), "marks": []}]
+                        })
+                    else:
                         blocks.append({
                             "_type": "block",
                             "style": "normal",
-                            "children": children if children else [{"_type": "span", "text": inner}]
+                            "children": [{"_type": "span", "text": line, "marks": []}]
                         })
-                        continue
 
-                    # Blockquote
-                    bq_match = re.match(r'<blockquote[^>]*>(.*?)</blockquote>', part, re.DOTALL)
-                    if bq_match:
-                        inner = re.sub(r'<[^>]+>', '', bq_match.group(1)).strip()
-                        blocks.append({
-                            "_type": "block",
-                            "style": "blockquote",
-                            "children": [{"_type": "span", "text": inner}]
-                        })
-                        continue
+                # Slug
+                slug = title.lower().replace(" ", "-").replace("'", "").replace(":", "")[:80]
 
-                    # Unordered list
-                    ul_match = re.match(r'<ul[^>]*>(.*?)</ul>', part, re.DOTALL)
-                    if ul_match:
-                        items = re.findall(r'<li[^>]*>(.*?)</li>', ul_match.group(1), re.DOTALL)
-                        for item in items:
-                            inner = re.sub(r'<[^>]+>', '', item).strip()
-                            blocks.append({
-                                "_type": "block",
-                                "style": "normal",
-                                "listItem": "bullet",
-                                "level": 1,
-                                "children": [{"_type": "span", "text": inner}]
-                            })
-                        continue
+                # Get category ref
+                cat_slug = meta.get("category", "self-care")
+                cat_ref = {"_type": "reference", "_ref": f"cat-{cat_slug}"}
 
-                return blocks
-
-            def parse_inline(text: str) -> list:
-                """Parse inline formatting (bold, italic, links)."""
-                children = []
-                # Simple approach: split by <strong>, <em>, <a>
-                pattern = r'(<strong>(.*?)</strong>|<em>(.*?)</em>|<a\s+href="(.*?)">(.*?)</a>)'
-                last_end = 0
-                for m in re.finditer(pattern, text):
-                    # Text before match
-                    before = text[last_end:m.start()].strip()
-                    if before:
-                        children.append({"_type": "span", "text": before})
-                    if m.group(2):  # <strong>
-                        children.append({"_type": "span", "text": m.group(2).strip(), "marks": ["strong"]})
-                    elif m.group(3):  # <em>
-                        children.append({"_type": "span", "text": m.group(3).strip(), "marks": ["em"]})
-                    elif m.group(5):  # <a>
-                        children.append({
-                            "_type": "span",
-                            "text": m.group(5).strip(),
-                            "marks": ["link"],
-                            "markDefs": [{"_type": "link", "href": m.group(4)}]
-                        })
-                    last_end = m.end()
-                # Remaining text
-                remaining = text[last_end:].strip()
-                if remaining:
-                    children.append({"_type": "span", "text": remaining})
-                return children
-
-            def upload_image_and_get_ref(project_id: str, dataset: str, token: str, image_label: str) -> str:
-                """Upload a placeholder SVG image to Sanity and return image asset ref."""
-                svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-                  <defs>
-                    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" style="stop-color:#1C1A17"/>
-                      <stop offset="50%" style="stop-color:#A16207"/>
-                      <stop offset="100%" style="stop-color:#FAFAF8"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="1200" height="630" fill="url(#bg)"/>
-                  <text x="600" y="315" text-anchor="middle" fill="#FFFFFF" font-family="Georgia,serif" font-size="48" font-weight="bold">{html.escape(image_label[:60])}</text>
-                </svg>'''
-
-                try:
-                    # Upload image file
-                    upload_url = f"https://{project_id}.api.sanity.io/v2023-08-01/assets/images/{dataset}"
-                    req = Request(upload_url, data=svg.encode('utf-8'), method='POST')
-                    req.add_header('Authorization', f'Bearer {token}')
-                    req.add_header('Content-Type', 'image/svg+xml')
-                    req.add_header('Accept', 'application/json')
-
-                    with urlopen(req, timeout=30) as resp:
-                        result = json.loads(resp.read().decode('utf-8'))
-                        return result.get('document', {}).get('_id', 'image-placeholder')
-                except Exception as e:
-                    print(f"Image upload failed: {e}")
-                    return 'image-placeholder'
-
-            def main(rewritten_text: str, seo_text: str) -> dict:
-                """
-                Parse the rewritten article + SEO metadata, create Sanity document.
-                """
-                project_id = os.environ.get("SANITY_PROJECT_ID", "o06jwzs8")
-                dataset = os.environ.get("SANITY_DATASET", "production")
-                token = os.environ.get("SANITY_API_TOKEN", "")
-                author_ref = os.environ.get("AUTHOR_REF_ID", "author-default")
-                site_url = os.environ.get("SITE_PUBLIC_URL", "https://the-candid-care.vercel.app")
-
-                if not token:
-                    return {"status": "error", "message": "SANITY_API_TOKEN is not set"}
-
-                # Parse rewritten article JSON
-                try:
-                    article = json.loads(rewritten_text)
-                except json.JSONDecodeError:
-                    # Try to extract JSON from text
-                    json_match = re.search(r'\{.*\}', rewritten_text, re.DOTALL)
-                    if json_match:
-                        article = json.loads(json_match.group(0))
-                    else:
-                        return {"status": "error", "message": "Failed to parse rewritten article JSON"}
-
-                if article.get("skip"):
-                    return {"status": "skipped", "reason": article.get("reason", "No suitable articles")}
-
-                # Parse SEO metadata JSON
-                try:
-                    seo = json.loads(seo_text)
-                except json.JSONDecodeError:
-                    json_match = re.search(r'\{.*\}', seo_text, re.DOTALL)
-                    if json_match:
-                        seo = json.loads(json_match.group(0))
-                    else:
-                        seo = {}
-
-                if seo.get("skip"):
-                    return {"status": "skipped", "reason": "SEO step determined article should be skipped"}
-
-                # Extract article data
-                title = article.get("title", "Untitled")
-                category_slug = article.get("category", "mindfulness")
-                excerpt = article.get("excerpt", "")
-                body_html = article.get("body_html", "")
-                tags = article.get("tags", [])
-                source_url = article.get("source_url", "")
-                source_name = article.get("source_name", "")
-
-                # SEO data
-                seo_title = seo.get("seo_title", title)
-                meta_description = seo.get("meta_description", excerpt)
-                faqs = seo.get("faqs", [])
-                key_takeaways = seo.get("key_takeaways", [])
-                reading_time = seo.get("reading_time_minutes", 5)
-                focus_keyword = seo.get("focus_keyword", "")
-
-                # Convert HTML to Portable Text
-                body_blocks = html_to_portable_text(body_html)
-
-                # Upload placeholder image
-                image_ref = upload_image_and_get_ref(project_id, dataset, token, title)
-
-                # Build Sanity document
-                import time
-                slug_current = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')[:96]
-
+                # Create document
                 doc = {
                     "_type": "article",
-                    "title": title,
-                    "slug": {"_type": "slug", "current": slug_current},
-                    "heroImage": {
-                        "_type": "image",
-                        "asset": {"_type": "reference", "_ref": image_ref}
-                    },
-                    "excerpt": excerpt,
-                    "body": body_blocks,
-                    "author": {"_type": "reference", "_ref": author_ref},
-                    "category": {"_type": "reference", "_ref": f"cat-{category_slug}"},
-                    "tags": tags,
-                    "readingTime": reading_time,
-                    "seoTitle": seo_title,
-                    "seoDescription": meta_description,
-                    "focusKeyword": focus_keyword,
-                    "faqs": [{"_key": f"faq{i}", "question": q.get("question", ""), "answer": q.get("answer", "")} for i, q in enumerate(faqs)],
-                    "keyTakeaways": key_takeaways,
-                    "sourceUrl": source_url,
-                    "sourceName": source_name,
-                    "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "title": meta.get("seo_title", title),
+                    "slug": {"_type": "slug", "current": slug},
+                    "excerpt": meta.get("excerpt", body[:150]),
+                    "body": blocks,
+                    "category": cat_ref,
+                    "author": {"_type": "reference", "_ref": author_id},
+                    "publishedAt": None,
+                    "tags": meta.get("tags", ["wellness"]),
+                    "keyTakeaways": meta.get("key_takeaways", []),
+                    "faqs": meta.get("faqs", []),
+                    "seoMeta": {
+                        "metaTitle": meta.get("seo_title", title),
+                        "metaDescription": meta.get("seo_description", "")
+                    }
                 }
 
-                # Create document in Sanity
-                create_url = f"https://{project_id}.api.sanity.io/v2023-08-01/data/mutate/{dataset}"
-                payload = json.dumps({"mutations": [{"create": doc}]}).encode('utf-8')
+                if image_ref:
+                    doc["mainImage"] = image_ref
 
-                req = Request(create_url, data=payload, method='POST')
-                req.add_header('Authorization', f'Bearer {token}')
-                req.add_header('Content-Type', 'application/json')
-                req.add_header('Accept', 'application/json')
+                # Publish to Sanity
+                mutate_url = f"https://{proj_id}.api.sanity.io/v2023-08-01/data/mutate/{dataset}"
+                payload = json.dumps({"mutations": [{"create": doc}]}).encode()
+                req = urllib.request.Request(mutate_url, data=payload, method="POST")
+                req.add_header("Authorization", f"Bearer {token}")
+                req.add_header("Content-Type", "application/json")
+                resp = json.loads(urllib.request.urlopen(req).read())
 
-                try:
-                    with urlopen(req, timeout=30) as resp:
-                        result = json.loads(resp.read().decode('utf-8'))
-                        return {
-                            "status": "published",
-                            "title": title,
-                            "category": category_slug,
-                            "slug": slug_current,
-                            "url": f"{site_url}/{category_slug}/{slug_current}"
-                        }
-                except URLError as e:
-                    return {"status": "error", "message": f"Sanity API error: {str(e)}"}
-          code_language: python3
+                return {
+                    "status": "published",
+                    "title": title,
+                    "slug": slug,
+                    "url": f"{site_url}/{cat_slug}/{slug}"
+                }
+          variables:
+            - value_selector: ["rewrite", "text"]
+              variable: article_text
+            - value_selector: ["seo-meta", "text"]
+              variable: seo_json
           outputs:
             status:
-              children: null
               type: string
             title:
-              children: null
-              type: string
-            category:
-              children: null
               type: string
             slug:
-              children: null
               type: string
             url:
-              children: null
-              type: string
-            message:
-              children: null
               type: string
           selected: false
-          title: "Sanity 发布"
-          type: code
-          variables:
-            - value_selector:
-                - "1769000000003"
-                - text
-              value_type: string
-              variable: rewritten_text
-            - value_selector:
-                - "1769000000004"
-                - text
-              value_type: string
-              variable: seo_text
-        height: 52
-        id: "1769000000005"
+        id: "sanity-publish"
         position:
-          x: 1288
+          x: 1190
           y: 300
         positionAbsolute:
-          x: 1288
+          x: 1190
           y: 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 242
-
-      # ===== NODE 6: End =====
+        width: 243
+        height: 89
       - data:
-          outputs:
-            - value_selector:
-                - "1769000000005"
-                - status
-              value_type: string
-              variable: publish_status
-            - value_selector:
-                - "1769000000005"
-                - title
-              value_type: string
-              variable: article_title
-            - value_selector:
-                - "1769000000005"
-                - url
-              value_type: string
-              variable: article_url
-          selected: false
-          title: "发布结果"
+          title: "End"
           type: end
-        height: 88
-        id: "1769000000006"
+          selected: false
+          outputs:
+            - variable: result
+              value_selector: ["sanity-publish", "url"]
+        id: "end-1"
         position:
-          x: 1590
+          x: 1500
           y: 300
         positionAbsolute:
-          x: 1590
+          x: 1500
           y: 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 242
-
+        width: 243
+        height: 89
+    edges:
+      - data:
+          isInLoop: false
+          isInIteration: false
+          sourceType: start
+          targetType: code
+        id: start-1-source-rss-fetch-target
+        selected: false
+        source: "start-1"
+        sourceHandle: source
+        target: "rss-fetch"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          isInIteration: false
+          sourceType: code
+          targetType: llm
+        id: rss-fetch-source-rewrite-target
+        selected: false
+        source: "rss-fetch"
+        sourceHandle: source
+        target: "rewrite"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          isInIteration: false
+          sourceType: llm
+          targetType: llm
+        id: rewrite-source-seo-meta-target
+        selected: false
+        source: "rewrite"
+        sourceHandle: source
+        target: "seo-meta"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: seo-meta-source-sanity-publish-target
+        selected: false
+        source: "seo-meta"
+        sourceHandle: source
+        target: "sanity-publish"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          isInIteration: false
+          sourceType: code
+          targetType: end
+        id: sanity-publish-source-end-1-target
+        selected: false
+        source: "sanity-publish"
+        sourceHandle: source
+        target: "end-1"
+        targetHandle: target
+        type: custom
+        zIndex: 0
     viewport:
       x: 0
       y: 0
-      zoom: 1
-
-  rag_pipeline_variables: []
+      zoom: 0.8

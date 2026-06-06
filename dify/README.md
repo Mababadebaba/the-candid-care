@@ -5,7 +5,7 @@
 The Candid Care 内容管道通过 Dify Workflow 实现从 RSS 源到 Sanity CMS 的全自动内容生产：
 
 ```
-[RSS Feed] → [AI 审核] → [AI 改写] → [AI 配图] → [Sanity 发布] → [Vercel 重建]
+[RSS Feed] → [AI 改写] → [SEO 元数据] → [Sanity 发布] → [Vercel 重建]
 ```
 
 ---
@@ -30,29 +30,34 @@ Author 和 7 个 Category 已自动创建：
 - **Author**: Dr. Emma Chen (`author-default`)
 - **Categories**: Mindfulness, Nutrition, Movement, Sleep, Mental Health, Relationships, Self-Care
 
-### 3. DeepSeek API Key (唯一需要获取的新 Key)
+### 3. DeepSeek API Key ✅ 已配置
 
-1. 打开 https://platform.deepseek.com/api_keys → 登录
-2. 点 **创建 API key** → 复制 `sk-...`
-3. 记下这个 Key，后续在 Dify 配置模型供应商时使用
+DeepSeek 模型供应商已在 Dify 中配置完成。
 
 ---
 
 ## 导入工作流
 
-### 方式一：从 DSL 导入（推荐）
+### 一步导入
 
-1. 打开 Dify Studio → **创建应用** → **从 DSL 导入**
-2. 上传 `dify/workflow.yml`
-3. 应用自动创建，进入 **Workflow 编辑器**
+1. Dify 首页 → **创建应用** → **从 DSL 导入**
+2. 选择文件：`dify/workflow.yml`
+3. 点导入 → 自动创建 6 节点工作流
 
-### 方式二：手动构建
+### 工作流节点 (6 nodes)
 
-按照 `workflow.yml` 中的节点配置逐个创建。重点是：
+| 节点 | ID | 类型 | 功能 |
+|------|-----|------|------|
+| 定时触发 | 1769000000001 | start | 手动或 Cron 触发 |
+| RSS 采集 | 1769000000002 | code | 解析 4 个 RSS 源，24h 去重 |
+| AI 改写 | 1769000000003 | llm | DeepSeek 改写品牌文章 |
+| SEO 元数据 | 1769000000004 | llm | 生成 SEO/GEO 元数据 |
+| Sanity 发布 | 1769000000005 | code | 创建文档 + SVG 占位图 |
+| 发布结果 | 1769000000006 | end | 输出发布 URL |
 
-- **RSS 采集** (Code 节点) — Python 解析多源 RSS
-- **AI 改写** (LLM 节点) — 使用 `prompts/rewrite.md` 作为 System Prompt
-- **Sanity 发布** (Code 节点) — 使用 `tools/sanity-api.py` 独立脚本
+### 导入后只需 1 件事
+
+去 **功能 → 环境变量** → 找到 `SANITY_API_TOKEN` → 填入你之前创建的 Sanity API Token
 
 ---
 
@@ -71,12 +76,9 @@ Author 和 7 个 Category 已自动创建：
 
 > 只需要填 **1 个**变量：`SANITY_API_TOKEN`（你在 Sanity 后台创建的 Token）。
 
-### 配置 DeepSeek 模型供应商
+### DeepSeek 模型供应商 ✅ 已配置
 
-这是最重要的一步：
-1. Dify 右上角头像 → **设置** → **模型供应商**
-2. 找到 **DeepSeek** → 点击 → **添加**
-3. 填入你的 DeepSeek API Key → **保存**
+无需操作 — DeepSeek 已在你 Dify 账号中配置完成。
 
 ---
 
