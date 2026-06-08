@@ -1,0 +1,548 @@
+app:
+  description: 'RSS→AI改写→AI配SEO→自动发布到Sanity。每天自动运行。'
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: workflow
+  name: The Candid Care - 内容自动化
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.17@f7a5c1d222d17ee419b17a80d6e4923838fe93788dc724a3af73fbc6990b3a32
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - id: 6f7c8a9b-0001-4000-a000-000000000001
+    name: SANITY_PROJECT_ID
+    value: o06jwzs8
+    value_type: string
+    selector:
+    - env
+    - SANITY_PROJECT_ID
+  - id: 6f7c8a9b-0002-4000-a000-000000000002
+    name: SANITY_DATASET
+    value: production
+    value_type: string
+    selector:
+    - env
+    - SANITY_DATASET
+  - id: 6f7c8a9b-0003-4000-a000-000000000003
+    name: SANITY_API_TOKEN
+    value: ''
+    value_type: secret
+    selector:
+    - env
+    - SANITY_API_TOKEN
+  - id: 6f7c8a9b-0004-4000-a000-000000000004
+    name: AUTHOR_REF_ID
+    value: author-default
+    value_type: string
+    selector:
+    - env
+    - AUTHOR_REF_ID
+  - id: 6f7c8a9b-0005-4000-a000-000000000005
+    name: SITE_PUBLIC_URL
+    value: https://the-candid-care.vercel.app
+    value_type: string
+    selector:
+    - env
+    - SITE_PUBLIC_URL
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1001-source-1002-target
+      source: '1001'
+      sourceHandle: source
+      target: '1002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1002-source-1003-target
+      source: '1002'
+      sourceHandle: source
+      target: '1003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: 1003-source-1004-target
+      source: '1003'
+      sourceHandle: source
+      target: '1004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1004-source-1005-target
+      source: '1004'
+      sourceHandle: source
+      target: '1005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: 1005-source-1006-target
+      source: '1005'
+      sourceHandle: source
+      target: '1006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: "1. 定时触发"
+        type: start
+        variables: []
+      height: 73
+      id: '1001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        selected: false
+        title: "2. 抓取 RSS"
+        type: code
+        code_language: python3
+        code: |
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          import json
+          import re
+          import ssl
+
+          def main() -> dict:
+              """抓取健康资讯 RSS feed，提取最新3篇文章"""
+              rss_url = "https://rss.nytimes.com/services/xml/rss/nyt/Well.xml"
+              ssl_context = ssl.create_default_context()
+              ssl_context.check_hostname = False
+              ssl_context.verify_mode = ssl.CERT_NONE
+
+              req = urllib.request.Request(rss_url, headers={
+                  'User-Agent': 'TheCandidCare/1.0',
+                  'Accept': 'application/rss+xml,application/xml'
+              })
+
+              with urllib.request.urlopen(req, timeout=30, context=ssl_context) as resp:
+                  xml_data = resp.read().decode('utf-8')
+
+              root = ET.fromstring(xml_data)
+
+              # 先尝试 RSS <item>，再尝试 Atom <entry>
+              items = root.findall('.//item')
+              if not items:
+                  ns = {'atom': 'http://www.w3.org/2005/Atom'}
+                  items = root.findall('.//atom:entry', ns)
+
+              articles = []
+              for item in items[:3]:
+                  title_el = item.find('title')
+                  link_el = item.find('link')
+                  desc_el = item.find('description')
+
+                  title = title_el.text.strip() if title_el is not None and title_el.text else ''
+                  link = ''
+                  if link_el is not None:
+                      link = link_el.text.strip() if link_el.text else link_el.get('href', '')
+                  summary = desc_el.text.strip() if desc_el is not None and desc_el.text else ''
+
+                  if title:
+                      articles.append({
+                          'title': title,
+                          'link': link,
+                          'summary': summary[:500]
+                      })
+
+              return {
+                  'articles': articles,
+                  'count': len(articles),
+                  'json': json.dumps(articles, ensure_ascii=False)
+              }
+        outputs:
+          articles:
+            type: array[object]
+            children: null
+          count:
+            type: number
+            children: null
+          json:
+            type: string
+            children: null
+        variables: []
+      height: 54
+      id: '1002'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: b5e3a1c2-1111-4444-8888-aaaaaaaaaaaa
+          role: system
+          text: |
+            You are a professional health & wellness content editor for "The Candid Care" website.
+
+            Rewrite the given article into The Candid Care's signature style:
+            - Warm, inviting, conversational tone
+            - Evidence-based but accessible language
+            - Starts with a relatable hook or personal anecdote
+            - Uses short paragraphs, max 3 sentences each
+            - Includes practical takeaways for readers
+            - Target length: 300-500 words
+
+            Output ONLY the rewritten article in clean Markdown format. No meta-commentary.
+        - id: b5e3a1c2-2222-4444-8888-bbbbbbbbbbbb
+          role: user
+          text: |
+            **Article Title:** {{#1002.articles[0].title#}}
+            **Source Link:** {{#1002.articles[0].link#}}
+            **Original Summary:**
+            {{#1002.articles[0].summary#}}
+
+        selected: false
+        title: "3. AI 改写文章"
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1003'
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.5
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: c6f4b2d3-3333-4444-8888-cccccccccccc
+          role: system
+          text: |
+            You are an SEO/GEO metadata generator for "The Candid Care" wellness blog.
+
+            Based on the rewritten article below, generate:
+            1. **Title:** An SEO-optimized title (50-60 characters). Include primary keyword naturally.
+            2. **Description:** A compelling meta description (140-160 characters). Include a call-to-action.
+            3. **Category:** One of these: Mental Health, Mindfulness, Movement, Nutrition, Relationships, Self-Care, Sleep
+
+            Output format (strict, each on its own line):
+            Title: [your SEO title here]
+            Description: [your meta description here]
+            Category: [one category from the list]
+        - id: c6f4b2d3-4444-4444-8888-dddddddddddd
+          role: user
+          text: |
+            {{#1003.text#}}
+
+        selected: false
+        title: "4. 生成SEO元数据"
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1004'
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        selected: false
+        title: "5. 发布到 Sanity"
+        type: code
+        code_language: python3
+        code: |
+          import urllib.request
+          import json
+          import re
+          import os
+          import ssl
+          from datetime import datetime, timezone
+
+          def main(rewrite_text: str, seo_text: str, article_title: str, article_link: str) -> dict:
+              """将改写后的文章发布到 Sanity CMS"""
+              proj_id = os.environ.get("SANITY_PROJECT_ID", "o06jwzs8")
+              dataset = os.environ.get("SANITY_DATASET", "production")
+              token = os.environ.get("SANITY_API_TOKEN", "")
+              author_id = os.environ.get("AUTHOR_REF_ID", "author-default")
+              site_url = os.environ.get("SITE_PUBLIC_URL", "https://the-candid-care.vercel.app")
+              ssl_context = ssl.create_default_context()
+              ssl_context.check_hostname = False
+              ssl_context.verify_mode = ssl.CERT_NONE
+
+              if not token:
+                  return {"status": "error: SANITY_API_TOKEN not set", "title": "", "slug": "", "url": ""}
+
+              # 从SEO输出中解析Title和Description
+              seo_title = article_title
+              seo_desc = ""
+              seo_category = "cat-self-care"
+              seo_keywords = ""
+              for line in seo_text.strip().split("\n"):
+                  line_lower = line.strip().lower()
+                  if line_lower.startswith("title:"):
+                      seo_title = line.split(":", 1)[1].strip()
+                  elif line_lower.startswith("description:"):
+                      seo_desc = line.split(":", 1)[1].strip()
+                  elif line_lower.startswith("category:"):
+                      cat_val = line.split(":", 1)[1].strip().lower().replace(" ", "-")
+                      valid_cats = ["mental-health", "mindfulness", "movement", "nutrition", "relationships", "self-care", "sleep"]
+                      for vc in valid_cats:
+                          if vc in cat_val:
+                              seo_category = f"cat-{vc}"
+                              break
+                  elif line_lower.startswith("key takeaway") or line_lower.startswith("keywords"):
+                      pass
+
+              # 生成 slug
+              slug = re.sub(r'[^a-z0-9]+', '-', seo_title.lower().strip())[:60].strip('-')
+
+              # 构建 Sanity mutation（注意: _type 必须是 "article"）
+              doc = {
+                  "_type": "article",
+                  "_id": slug,
+                  "title": seo_title,
+                  "slug": {"_type": "slug", "current": slug},
+                  "body": [{
+                      "_type": "block",
+                      "style": "normal",
+                      "children": [{
+                          "_type": "span",
+                          "text": rewrite_text[:20000]
+                      }]
+                  }],
+                  "excerpt": seo_desc[:200] if seo_desc else rewrite_text[:200],
+                  "author": {"_type": "reference", "_ref": author_id},
+                  "category": {"_type": "reference", "_ref": seo_category},
+                  "publishedAt": datetime.now(timezone.utc).isoformat(),
+                  "seoTitle": seo_title[:70],
+                  "seoDescription": seo_desc[:160]
+              }
+              mutations = [{"createOrReplace": doc}]
+
+              # 发送到 Sanity API
+              url = f"https://{proj_id}.api.sanity.io/v2024-01-01/data/mutate/{dataset}"
+              body = json.dumps({"mutations": mutations}).encode('utf-8')
+
+              req = urllib.request.Request(url, data=body, method='POST')
+              req.add_header('Authorization', f'Bearer {token}')
+              req.add_header('Content-Type', 'application/json')
+
+              try:
+                  with urllib.request.urlopen(req, timeout=30, context=ssl_context) as resp:
+                      result = json.loads(resp.read())
+
+                  if 'transactionId' in result:
+                      return {
+                          "status": "success",
+                          "title": seo_title,
+                          "slug": slug,
+                          "url": f"{site_url}/posts/{slug}"
+                      }
+                  else:
+                      return {
+                          "status": f"error: {json.dumps(result)[:200]}",
+                          "title": seo_title,
+                          "slug": slug,
+                          "url": ""
+                      }
+              except Exception as e:
+                  return {
+                      "status": f"error: {str(e)[:200]}",
+                      "title": seo_title,
+                      "slug": slug,
+                      "url": ""
+                  }
+        outputs:
+          status:
+            type: string
+            children: null
+          title:
+            type: string
+            children: null
+          slug:
+            type: string
+            children: null
+          url:
+            type: string
+            children: null
+        variables:
+        - variable: rewrite_text
+          value_selector:
+          - '1003'
+          - text
+          value_type: string
+        - variable: seo_text
+          value_selector:
+          - '1004'
+          - text
+          value_type: string
+        - variable: article_title
+          value_selector:
+          - '1002'
+          - articles
+          - '0'
+          - title
+          value_type: string
+        - variable: article_link
+          value_selector:
+          - '1002'
+          - articles
+          - '0'
+          - link
+          value_type: string
+      height: 54
+      id: '1005'
+      position:
+        x: 1280
+        y: 282
+      positionAbsolute:
+        x: 1280
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - variable: result
+          value_selector:
+          - '1005'
+          - status
+        title: "6. 完成"
+        type: end
+      height: 73
+      id: '1006'
+      position:
+        x: 1580
+        y: 282
+      positionAbsolute:
+        x: 1580
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []
