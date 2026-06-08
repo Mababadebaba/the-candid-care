@@ -8,4 +8,4 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-Sitemap: https://thecandidcare.com/sitemap-index.xml
+Sitemap: https://the-candid-care.vercel.app/sitemap-index.xml
